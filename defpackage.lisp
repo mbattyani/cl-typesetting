@@ -8,8 +8,8 @@
   (:use common-lisp iterate)
   (:nicknames tt)
   (:export
-   #:with-text-content
-   #:paragraph
+   #:with-text-content #:with-document #:compile-text #:draw-pages #:finalize-page
+   #:paragraph 
    #:with-style #:set-style #:with-style
    #:table #:row #:cell
    #:put-string #:verbatim

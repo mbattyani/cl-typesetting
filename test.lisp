@@ -8,21 +8,6 @@
 
 (defparameter *boxes* nil) ;for debugging...
 
-#+nil
-(defun draw-block (content x y dx dy rotation &key (v-align :top) special-fn)
-  (pdf:with-saved-state
-    (pdf:translate x y)
-    (pdf:rotate rotation)
-    (pdf:set-gray-fill 1)
-    (pdf:basic-rect -5 0 (+ dx 10) (- dy))
-    (pdf:fill-and-stroke)
-    (pdf:set-gray-fill 0)
-    (let ((box (make-filled-vbox content dx dy v-align)))
-      (push box *boxes*)
-      (when special-fn
-	(funcall special-fn box 0 0))
-      (stroke box 0 0))))
-
 ; a very simple hello world
 (defun hello (&optional (file #P"/tmp/hello.pdf"))
   (pdf:with-document ()
@@ -127,8 +112,9 @@
       (pdf:set-line-width 1)
       (pdf:set-color-stroke (color box))
       (pdf:move-to (- dx/2) 0)
-      (loop for x from (- dx/2) by 0.2
-	    for y = (* dy/2 (cos (* x 0.8)) (exp (* x x -0.006d0)))
+      (loop with a = (/ -0.2 (dx box)) and w = (/ 200.0 (dx box))
+	    for x from (- dx/2) by 0.2
+	    for y = (* dy/2 (cos (* x w)) (exp (* x x a)))
 	    while (< x dx/2)
 	    do (pdf:line-to x y))
       (pdf:stroke))))
@@ -218,19 +204,131 @@
 (defun link-all-a-and-spaces (box x y)
   (link-all-a box x y)
   (link-all-spaces box x y))
-  
+
+(defun gen-box-graph ()
+  (let* ((g1 (make-instance 'graph :dot-attributes '(#+nil("rankdir" "LR")("nodesep" "0.3")("ranksep" "0.8"))
+			    :max-dx 500 :max-dy 300 :border-width nil))
+	 (n1 (make-instance 'graph-node :data "box" :graph g1))
+	 (n2 (make-instance 'graph-node :data "h-mode-mixin" :graph g1))
+	 (n3 (make-instance 'graph-node :data "v-mode-mixin" :graph g1))
+	 (n5 (make-instance 'graph-node :data "soft-box" :graph g1))
+	 (n6 (make-instance 'graph-node :data "container-box" :graph g1))
+	 (n7 (make-instance 'graph-node :data "vbox" :graph g1))
+	 (n8 (make-instance 'graph-node :data "hbox" :graph g1))
+	 (n9 (make-instance 'graph-node :data "glue" :graph g1))
+	 (n10 (make-instance 'graph-node :data "hglue" :graph g1))
+	 (n11 (make-instance 'graph-node :data "vglue" :graph g1))
+	 (n12 (make-instance 'graph-node :data "spacing" :graph g1))
+	 (n13 (make-instance 'graph-node :data "h-spacing" :graph g1))
+	 (n14 (make-instance 'graph-node :data "v-spacing" :graph g1))
+	 (n15 (make-instance 'graph-node :data "char-box" :graph g1))
+	 (n16 (make-instance 'graph-node :data "white-char-box" :graph g1)))
+    (make-instance 'graph-edge :head n1 :tail n5 :label "subclass" :graph g1)
+    (make-instance 'graph-edge :head n5 :tail n6 :graph g1)
+    (make-instance 'graph-edge :head n6 :tail n7 :graph g1)
+    (make-instance 'graph-edge :head n2 :tail n7 :graph g1)
+    (make-instance 'graph-edge :head n6 :tail n8 :graph g1)
+    (make-instance 'graph-edge :head n3 :tail n8 :graph g1)
+    (make-instance 'graph-edge :head n5 :tail n9 :graph g1)
+    (make-instance 'graph-edge :head n9 :tail n10 :graph g1)
+    (make-instance 'graph-edge :head n2 :tail n10 :graph g1)
+    (make-instance 'graph-edge :head n9 :tail n11 :graph g1)
+    (make-instance 'graph-edge :head n3 :tail n11 :graph g1)
+    (make-instance 'graph-edge :head n5 :tail n12 :graph g1)
+    (make-instance 'graph-edge :head n12 :tail n13 :graph g1)
+    (make-instance 'graph-edge :head n2 :tail n13 :graph g1)
+    (make-instance 'graph-edge :head n12 :tail n14 :graph g1)
+    (make-instance 'graph-edge :head n3 :tail n14 :graph g1)
+    (make-instance 'graph-edge :head n1 :tail n15 :graph g1)
+    (make-instance 'graph-edge :head n2 :tail n15 :graph g1)
+    (make-instance 'graph-edge :head n10 :tail n16 :graph g1)
+    (compute-graph-layout g1)
+    g1))
+
+(defun make-color-node-box (graph name color description)
+  (make-instance 'graph-node :graph graph :dx 70 :data
+		 (make-filled-vbox
+		  (compile-text ()
+ 		     (paragraph (:h-align :center :font "Helvetica-Oblique"
+					  :font-size 14 :color '(0 0 0))
+				(put-string name) " "
+				(colored-box :dx 9.0 :dy 9.0 :color color :border-width 0.5)
+				:eol
+				(with-style (:font "Times-Italic" :font-size 10)
+				  (put-string description))))
+		  70 +huge-number+)))
+
+(defun gen-color-graph ()
+  (let* ((g1 (make-instance 'graph :dot-attributes '(#+nil("rankdir" "LR")("nodesep" "0.3")("ranksep" "0.8"))
+			    :max-dx 500 :max-dy 300 :border-width nil))
+	 (red (make-color-node-box g1 "red" '(1.0 0 0) "(primary color)"))
+	 (green (make-color-node-box g1 "green" '(0 1.0 0) "(primary color)"))
+	 (blue (make-color-node-box g1 "blue" '(0 0 1.0) "(primary color)"))
+	 (cyan (make-color-node-box g1 "cyan" '(0 1.0 1.0) "(green + blue)"))
+	 (magenta (make-color-node-box g1 "magenta" '(1.0 0 1.0) "(red + blue)"))
+	 (yellow (make-color-node-box g1 "yellow" '(1.0 1.0 0) "(red + green)")))
+    (make-instance 'graph-edge :head blue :tail cyan :graph g1)
+    (make-instance 'graph-edge :head green :tail cyan :graph g1)
+    (make-instance 'graph-edge :head red :tail magenta :graph g1)
+    (make-instance 'graph-edge :head blue :tail magenta :graph g1)
+    (make-instance 'graph-edge :head red :tail yellow :graph g1)
+    (make-instance 'graph-edge :head green :tail yellow :graph g1)
+    (compute-graph-layout g1)
+    g1))
+
 ;;; Example document
 ; you need to load the fonts with something like this:
 ;   (pdf:load-t1-font "/tmp/cmex10.afm" "/tmp/cmex10.pfb")
 ;   (pdf:load-t1-font "/tmp/cmti10.afm" "/tmp/cmti10.pfb")
 
-(defun single-page-example (&optional (file #P"/tmp/ex.pdf")
-				      (banner-jpg #P"/tmp/banner.jpg")
-				      (fractal-jpg #P"/tmp/fractal.jpg"))
+(defun full-example (&optional (file #P"/tmp/ex.pdf")
+			       (banner-jpg #P"/tmp/banner.jpg")
+			       (fractal-jpg #P"/tmp/fractal.jpg"))
   (pdf:with-document ()
     (pdf:with-page ()
-      (pdf:with-outline-level ("Example" (pdf:register-page-reference))
-	(pdf:set-line-width 0.1)
+      (pdf:with-outline-level ("Table of Content" (pdf:register-page-reference))
+	(let ((content
+	       (compile-text ()
+			     (vspace 100)
+			     (paragraph (:h-align :center :font "Helvetica-Bold" :font-size 60 :color '(0.0 0 0.8))
+					"cl-typesetting" :eol
+					(vspace 2)
+					(hrule :dy 1)
+					(with-style (:font "Times-Italic" :font-size 28)
+					  "The Cool Common Lisp Typesetting System"))
+			     (vspace 100)
+			     (hrule :dy 30 :stroke-fn 'draw-wavelet-rule :color '(0.0 0 0.6))
+			     (vspace 250)
+			     (hrule :dy 0.5 :color '(0.0 0 0.6))
+			     (paragraph (:h-align :center :font "Helvetica" :font-size 16 :color '(0.0 0 0.6))
+					"Table of content")
+			     (hrule :dy 0.1 :color '(0.0 0 0.6))
+			     (paragraph (:h-align :fill :font "Helvetica" :font-size 14 :color '(0.0 0 0.4)
+						  :left-margin 25 :right-margin 25)
+					"Hello world" (dotted-hfill) "1" :eol
+					"Full demo" (dotted-hfill) "2" :eol
+					"cl-typegraph" (dotted-hfill) "3" :eol)
+			     (vspace 2)
+			     (hrule :dy 0.5 :color '(0.0 0 0.6))
+)))
+	  (draw-block content 20 800 545 700))))
+    (pdf:with-page ()
+      (pdf:with-outline-level ("Hello world" (pdf:register-page-reference))
+	(let ((content
+	       (compile-text ()
+		  (paragraph (:h-align :center :font "Helvetica-Bold" :font-size 30 :color '(0.0 0 0.8))
+			     "cl-typesetting" :eol
+			     (vspace 2)
+			     (hrule :dy 1)
+			     (with-style (:font "Times-Italic" :font-size 24)
+			       "The Cool Common Lisp Typesetting System")
+			     (vspace 50)
+			     (with-style (:font "Helvetica-Oblique" :font-size 100)
+			       "Hello World!")
+			     (vspace 50)))))
+	  (draw-block content 20 800 545 700))))
+   (pdf:with-page ()
+      (pdf:with-outline-level ("Full demo" (pdf:register-page-reference))
 	(let ((content
 	       (compile-text ()
 		 (paragraph (:h-align :center :font "Helvetica-Bold" :font-size 30 :color '(0.0 0 0.8))
@@ -238,7 +336,7 @@
 			    (vspace 2)
 			    (hrule :dy 1)
 			    (with-style (:font "Times-Italic" :font-size 13)
-			      "The cool Common Lisp typesetting system"))
+			      "The Cool Common Lisp Typesetting System"))
 		 (paragraph (:h-align :justified :top-margin 10 :first-line-indent 10
 				      :font "Times-Italic" :font-size 9)
 			      "This typesetting system's goal is to be an alternative to the TeX typesetting system. It is written in Common Lisp and uses cl-pdf as its backend. This enables it to be powerful, extensible, programmable  and fast. Though it is not considered very difficult, it is already much better than Word...")
@@ -363,6 +461,32 @@
 	  (draw-block content 50 425 250 380 :rotation -5 :border 0.1)
 	  (draw-block content 330 800 250 380 :rotation -2  :border 0.1 :special-fn 'link-all-a-and-spaces)
 	  (draw-block content 310 400 250 380 :v-align :justified :border 0.1))))
+    (pdf:with-page ()
+      (pdf:with-outline-level ("cl-typegraph" (pdf:register-page-reference))
+	(let ((content
+	       (compile-text ()
+		  (paragraph (:h-align :center :font "Helvetica-Bold" :font-size 30 :color '(0.0 0 0.8))
+			     "cl-typegraph" :eol
+			     (vspace 2)
+			     (hrule :dy 1)
+			     (with-style (:font "Times-Italic" :font-size 13)
+			       "The Cool Common Lisp Graph Typesetting System"))
+		  (vspace 20)
+		  (paragraph (:h-align :justified :top-margin 10 :first-line-indent 10
+				       :font "helvetica" :font-size 12)
+			     "cl-typegraph is a cl-typesetting extension to typeset graphs. It uses GraphViz for the graph layout and then draws it with cl-pdf and cl-typesetting. See some examples below:")
+		  (vspace 20)
+		  :hfill (graph-box (gen-simple-graph)) :hfill
+		  (paragraph (:h-align :center :font "Times-Italic" :font-size 10)
+			     "The class hierarchy for the boxes in cl-typeseting.")
+		  (vspace 20)
+		  (paragraph (:h-align :justified :font "helvetica" :font-size 12)
+			     "In the graph below, each node contains a full cl-typesetting layout. All the cl-typesetting features can be used in a node even another graph.")
+		  (vspace 20)
+		  :hfill (graph-box (gen-color-graph)) :hfill
+		  (paragraph (:h-align :center :font "Times-Italic" :font-size 10)
+			     "The primary colors"))))
+	  (draw-block content 30 810 530 780))))
     (pdf:write-document file)))
 
 ;;; A higher level example
@@ -481,8 +605,7 @@
                           :splittable-p t)
             (header-row ()
               (cell (:col-span 5)
-                (paragraph (:h-align :center
-                                    :font "Times-Italic" :font-size 12)
+		    (paragraph (:h-align :center :font "Times-Italic" :font-size 12)
                   "Table with cells spanning more then one row")))
             (row (:background-color :green)
               (cell (:row-span 2 :background-color :blue)
@@ -548,3 +671,4 @@
                (pdf:set-line-width 0.1)
                (draw-block content 20 800 545 700))))
      (pdf:write-document file)))
+

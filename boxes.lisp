@@ -41,15 +41,6 @@
 (defclass v-mode-mixin ()
   ())
 
-(defclass elasticity ()
-  ((delta-size :accessor delta-size :initform 0)
-   (max-expansion :accessor max-expansion :initform 0 :initarg :max-expansion)
-   (expansibility :accessor expansibility :initform 0 :initarg :expansibility)
-   (max-compression :accessor max-compression :initform 0 :initarg :max-compression)
-   (compressibility :accessor compressibility :initform 0 :initarg :compressibility)
-   (locked :accessor locked :initform nil :initarg :locked)
-   ))
-
 (defmethod delta-size (obj)
   0)
 
@@ -65,8 +56,13 @@
 (defmethod compressibility (obj)
   0)
 
-(defclass soft-box (box elasticity)
-  ())
+(defclass soft-box (box)
+  ((delta-size :accessor delta-size :initform 0)
+   (max-expansion :accessor max-expansion :initform 0 :initarg :max-expansion)
+   (expansibility :accessor expansibility :initform 0 :initarg :expansibility)
+   (max-compression :accessor max-compression :initform 0 :initarg :max-compression)
+   (compressibility :accessor compressibility :initform 0 :initarg :compressibility)
+   (locked :accessor locked :initform nil :initarg :locked)))
 
 (defmethod locked (box)
   t)
@@ -174,7 +170,7 @@
  ;;; Split a v-mode box vertically into two parts
   ;; Args: dx - area width, dy - area height
   ;; Values: box-fitted, box-left, dy-left
- (:method (v-box dx dy)
+ (:method (box dx dy)
   (declare (ignore dx))
   (if (> (dy box) dy)
       (values nil box dy)
