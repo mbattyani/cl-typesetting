@@ -40,6 +40,28 @@
 	  (draw-block content 20 800 545 700 0))))
     (pdf:write-document file)))
 
+; a multipage simple hello world
+(defun muli-page-hello (&optional (file #P"/tmp/hello.pdf"))
+  (pdf:with-document ()
+    (let ((content
+	   (compile-text ()
+		(vspace 100)
+		(paragraph (:h-align :centered :font "Helvetica-Bold" :font-size 50 :color '(0.0 0 0.8))
+			   "cl-typesetting" :eol
+			   (vspace 2)
+			   (hrule :dy 1)
+			   (with-style (:font "Times-Italic" :font-size 26)
+			     "The cool Common Lisp typesetting system")
+			   (vspace 50)
+			     (dotimes (i 100)
+			       (with-style (:font "Helvetica-Oblique" :font-size 36 :color '(0.0 0 0.8))
+				 "Hello World!" :eol))))))
+      (loop while (boxes content) do
+	    (pdf:with-page ()
+	      (pdf:set-line-width 0.1)
+	      (draw-block content 20 800 545 700 0))))
+    (pdf:write-document file)))
+
 ;; The Fancy Example!
 
 (defparameter *par1*

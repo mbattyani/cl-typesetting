@@ -20,23 +20,22 @@
 	  (pdf:basic-rect x y (dx box)(- (dy box)))
 	  (pdf:fill-path)))))
 
-(defmacro hrule (&rest args)
-  `(add-box (make-instance 'hrule ,@args)))
+(defun hrule (&rest args)
+  (add-box (apply 'make-instance 'hrule args)))
 
 (defclass jpeg-box (soft-box)
   ((file :accessor file :initform nil :initarg :file)
    (pdf-jpeg-obj :accessor pdf-jpeg-obj :initform nil :initarg :pdf-jpeg-obj)))
 
-(defmacro image (&rest args &key inline &allow-other-keys)
+(defun image (&rest args &key inline &allow-other-keys)
   (if inline
-      `(add-box (make-instance 'jpeg-box ,@args :allow-other-keys t))
-      (with-gensyms (hbox)
-	`(let ((,hbox (make-instance 'hbox :boxes (list (make-hfill-glue)
-							(make-instance 'jpeg-box ,@args :allow-other-keys t)
-							(make-hfill-glue))
-				     :adjustable-p t)))
-	  (compute-natural-box-size ,hbox)
-	  (add-box ,hbox)))))
+      (add-box (apply 'make-instance 'jpeg-box :allow-other-keys t args))
+      (let ((hbox (make-instance 'hbox :boxes (list (make-hfill-glue)
+						    (apply 'make-instance 'jpeg-box :allow-other-keys t args)
+						    (make-hfill-glue))
+				 :adjustable-p t)))
+	(compute-natural-box-size hbox)
+	(add-box hbox))))
 
 (defmethod stroke ((box jpeg-box) x y)
   (unless (pdf-jpeg-obj box)
@@ -50,6 +49,7 @@
    (fill-dx :accessor fill-dx :initform nil :initarg :fill-dx)
    (fill-dy :accessor fill-dy :initform nil :initarg :fill-dy)))
 
+#+nil
 (defmacro background-image (&rest args &key inline &allow-other-keys)
   `(add-box (make-instance 'background-jpeg-box ,@args :allow-other-keys t)))
 
