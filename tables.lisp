@@ -106,12 +106,12 @@
         (height (or (height row) +huge-number+)))
     (loop with next-widths = (col-widths table)
           for cell in (cells row)
-          and width = (or (pop next-widths) 0)	; in case less elements specified
+          and width = (pop next-widths)
           and col-number = 0 then (+ col-number col-span 1)
 	  and cell-height = 0.0
           for col-span = (1- (col-span cell))
           and row-span = (row-span cell)
-	  
+	  unless width do (error "Too many cells in this row")
 	  ;; Adjust cell width for cells spanning multiple columns
           unless (zerop col-span)
             do (incf width (+ (* col-span full-size-offset)

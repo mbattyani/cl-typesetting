@@ -296,6 +296,9 @@
     ,@(mapcar 'insert-stuff body)
     *content*))
 
+(defmacro with-text-compilation (&body body)
+  `(progn ,@(mapcar 'insert-stuff body)))
+
 (defmacro with-style ((&rest style) &body body)
   (with-gensyms (new-style restore-style)
     `(let* ((,new-style (make-instance 'text-style ,@style))
