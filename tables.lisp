@@ -40,11 +40,15 @@
   (footer :accessor footer :initarg :footer :initform nil) ; rows printed on each page
   (rows-left :accessor rows-left :initform ())))
 
+(defclass splitted-multi-page-table ()
+  ((table :accessor table :initform nil :initarg :table)
+   (first-row :accessor first-row :initform 0 :initarg :first-row)
+   (last-row :accessor last-row :initform 0 :initarg :last-row)))
+
 (defclass multi-page-row (table-row)
  ((parent :accessor parent :initform *table* :initarg :parent)
   ;; padding control - :first, :last or :single
-  (position :initarg :position :initform nil) 
-))
+  (position :initarg :position :initform nil)))
 
 (defun add-table-row (row &optional (table *table*))
   (if (rows table)
@@ -391,7 +395,7 @@
 (defmacro cell ((&rest args) &body body)
   `(add-table-cell (make-instance 'table-cell :content (compile-text () ,@body) ,@args)))
 
-#|
+#|
 ;(let ((pdf:*page*(setq content
 (defun make-test-table (&optional (inline t) (splittable-p nil) (border 1/2))
   (typeset:table (:col-widths '(20 40 60 80 120)

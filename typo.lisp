@@ -166,6 +166,7 @@
     (when space-params
       (destructuring-bind (w max-exp exp max-compr compr) space-params
 	  (make-instance 'white-char-box :dx (* width w)
+			 :trimmable-p t
 			 :max-expansion (* width max-exp)
 			 :expansibility (* width exp)
 			 :max-compression (* width max-compr)
