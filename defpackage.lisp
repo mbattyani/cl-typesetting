@@ -12,7 +12,7 @@
    #:table #:row #:cell
    #:put-string
    #:make-filled-vbox
-   #:vspace #:hspace
+   #:vspace #:hspace #:new-line #:new-page
    #:with-offset #:with-superscript #:with-subscript
    #:hrule #:image #:background-image
    #:display-formula #:fraction #:math-super-and-sub-script

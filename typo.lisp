@@ -228,6 +228,9 @@
 (defun new-line ()
   (add-box :eol))
 
+(defun new-page ()
+  (add-box :eop))
+
 (defmethod insert-stuff ((obj t))
   obj)
 
@@ -236,6 +239,9 @@
 
 (defmethod insert-stuff ((obj (eql :eol)))
   '(new-line))
+
+(defmethod insert-stuff ((obj (eql :eop)))
+  '(new-page))
 
 (defmethod insert-stuff ((obj (eql :vfill)))
   '(add-box (make-vfill-glue)))
