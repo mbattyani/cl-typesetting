@@ -16,7 +16,7 @@
    #:with-offset #:with-superscript #:with-subscript
    #:hrule #:image #:background-image
    #:display-formula #:fraction #:math-super-and-sub-script
-   #:vbox #:hbox 
+   #:vbox #:hbox #:colored-box #:user-drawn-box 
    ))
 
 

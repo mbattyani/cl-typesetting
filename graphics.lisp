@@ -76,3 +76,20 @@
 	  (pdf:basic-rect x y (dx box)(- (dy box)))
 	  (pdf:fill-path)))))
 
+(defun stroke-colored-box (box x y color border-width border-color)
+  (pdf:with-saved-state
+      (pdf:set-color-fill color)
+      (when border-width
+	(pdf:set-color-stroke border-color)
+	(pdf:set-line-width border-width))
+      (pdf:basic-rect x (+ y (offset box)) (dx box)(- (dy box)))
+      (pdf:fill-and-stroke)))
+
+(defun colored-box (&rest args &key dy (offset dy) color border-width (border-color '(0 0 0))
+			  &allow-other-keys)
+  (add-box (apply 'make-instance 'user-drawn-box
+		  :stroke-fn
+		  #'(lambda(box x y)
+		      (stroke-colored-box box x y color border-width border-color))
+		  :allow-other-keys t :offset offset args)))
+

@@ -219,7 +219,10 @@
 				      :font "Times-Italic" :font-size 10)
 			      "This typesetting system's goal is to be an alternative to the TeX typesetting system. It is written in Common Lisp and uses cl-pdf as its backend. This will enable it to be powerful, extensible and fast. Though it is not considered very difficult, it is already better than Word...")
 		 (paragraph (:h-align :centered :font "Helvetica-BoldOblique" :font-size 20 :color '(1.0 0 0))
-			    "Now in Color!")
+			    "Now in Color! "
+			    (colored-box :dx 15.0 :dy 15.0 :color "#FFC0C0" :border-width 0.5) " "
+			    (colored-box :dx 15.0 :dy 15.0 :color "#C0FFC0" :border-width 0.5) " "
+			    (colored-box :dx 15.0 :dy 15.0 :color "#C0C0FF" :border-width 0.5))
 		 (paragraph (:h-align :centered :font "Times-Italic" :font-size 12 :color '(0.0 0.6 0.3))
 			    "With user defined "
 			    (put-rotated-char-string "extensions") :eol
