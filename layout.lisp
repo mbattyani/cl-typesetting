@@ -26,7 +26,7 @@
   t)
 
 (defmethod cut-point-p ((box char-box))
-  (char= (pdf:hyphen-char *font*)(boxed-char box)))
+  (and (pdf:hyphen-char *font*)(char= (pdf:hyphen-char *font*)(boxed-char box))))
 
 ;;This needs a complete rewrite...
 (defmethod split-lines (boxes dx dy &optional (v-align :top))
