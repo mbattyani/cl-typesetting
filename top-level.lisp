@@ -111,7 +111,7 @@
                              (add-page)
                              (setq dy (room-left pdf:*page*)
                                    y  (+ dy bottom-margin))
-                             (invoke-restart restart))
+                             (invoke-restart restart y))
                             ((loop-finish))))))
               (multiple-value-bind (boxes boxes-left dy-left) (v-split content dx dy :top)
                 (cond (boxes

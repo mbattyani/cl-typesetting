@@ -118,6 +118,17 @@
 	    (when line-boxes (next-line line-boxes)))
       (return-lines))))
 
+(defun non-empty-style-p (style)
+  (and (style-p style)
+       (or (font style)
+           (font-size style)
+           (text-x-scale style)
+           (color style)
+           (background-color style)
+           (h-align style)
+           (left-margin style)
+           (right-margin style))))
+
 (defmethod v-split ((content text-content) dx dy &optional (v-align :top))
   (let* ((boxes (boxes content))
          (boxes-left boxes)
@@ -133,11 +144,22 @@
     (when (member v-align '(:center :bottom))
       (push (make-vfill-glue) text-lines))
     (labels ((return-lines (&optional (dy-left dy))
-	       (when (member v-align '(:center :top))
-		 (push (make-vfill-glue) text-lines))
-	       (return-from v-split (values (nreverse text-lines)
-                                           (when boxes-left (cons last-style boxes-left))
-                                           dy-left)))
+	       ;; Optimize boxes-left slightly by ignoring empty style
+	       (when (and boxes-left (non-empty-style-p last-style))
+		 (push last-style boxes-left))
+	       ;; Detect pathology where text-lines is a singleton spurious text-line
+	       ;; consisting only of instances of
+	       ;;  (1) text-style, or
+	       ;;  (2) h-spacing (including explicit or made by make-hfill-glue).
+	       (cond ((or (null text-lines)
+			  (and (null (rest text-lines))
+			       (every (lambda (box) (or (style-p box)
+							(typep box 'h-spacing)))
+				      (boxes (first text-lines)))))
+		      (setq text-lines nil))
+		     ((member v-align '(:center :top))
+		      (setq text-lines (cons (make-vfill-glue) text-lines))))
+	       (return-from v-split (values (nreverse text-lines) boxes-left dy-left)))
 	     (abort-line ()
 	       (setf boxes-left boxes)
 	       (return-lines))
@@ -190,6 +212,7 @@
                  (incf dy (dy box))
                  (push box boxes-left)
                  (multiple-value-bind (boxes boxes-left dy-left) (v-split box dx dy)
+		   (declare (ignore boxes-left))
                    (setf text-lines (revappend boxes text-lines))
                    (return-lines dy-left)))
 	       (push box text-lines))
