@@ -62,6 +62,7 @@
                         (header-top *default-page-header-footer-margin*)
                         (footer-bottom *default-page-header-footer-margin*)
                         break
+		        finalize-fn
                         &allow-other-keys)
  ;;; Args:
   ;;	content		Text content, multi-page-table, or other content.
@@ -82,6 +83,7 @@
                                      :footer-bottom footer-bottom
                                      ;; Move room-left into initialize-instance :after?
                                      :room-left (- height top-margin bottom-margin)
+				     :finalize-fn finalize-fn
                                      (remove-properties args
                                        '(:size :orientation :bounds
                                          :header-top :footer-bottom :break))))))

@@ -7,6 +7,25 @@
 (defmethod stroke (box x y)
   )
 
+(defmethod stroke :before ((box box) x y)
+  (if (and (functionp *pre-decoration*)
+	   (or (typep box 'char-box)
+	       (typep box 'white-char-box)))
+      (funcall *pre-decoration*
+	       box
+	       x (+ y (baseline box) (offset box))
+	       (dx box) (- (dy box)))))
+
+(defmethod stroke :after ((box box) x y)
+  (if (and (functionp *post-decoration*)
+	   (or (typep box 'char-box)
+	       (typep box 'white-char-box)))
+      (funcall *post-decoration*
+	       box
+	       x (+ y (baseline box) (offset box))
+	       (dx box) (- (dy box)))))
+
+
 (defmethod stroke ((hbox hbox) x y)
   (decf x (baseline hbox))
   (decf x (offset hbox))
@@ -73,6 +92,10 @@
 	    for size = (+ (dx box)(delta-size box))
 	    do
 	    (cond
+	      ((or (functionp *pre-decoration*)
+		   (functionp *post-decoration*))
+	       (end-text-chunk)
+	       (stroke box x y))
 	      ((char-box-p box)(add-char box))
 	      ((white-space-p box) (add-spacing size))
 	      (t (end-text-chunk)(stroke box x y)))
@@ -88,4 +111,8 @@
     (setf *text-x-scale* (text-x-scale style)))
   (when (color style)
     (setf *color* (color style))
-    (pdf::set-color-fill *color*)))
+    (pdf::set-color-fill *color*))
+  (when (pre-decoration style)
+    (setf *pre-decoration* (pre-decoration style)))
+  (when (post-decoration style)
+    (setf *post-decoration* (post-decoration style))))

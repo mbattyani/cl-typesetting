@@ -9,7 +9,7 @@ Manuel Giraud (enumerate)
 Dmitri Ivanov (splitable tables, top-level document structure, lots of improvements)
 Fabrice Popineau (TeX hyphenation algorithm)
 Peter Seibel (lots of testing, improvements)
-Klaus Weidner (CMUCL compatibility)
+Klaus Weidner (CMUCL compatibility, change-bars, before/after character decorations, background-color references for tables of contents and intra-document page references, bug fixes)
 
 I apologize if I've missed someone. Please let me know if that's the case.
 

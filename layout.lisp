@@ -38,7 +38,9 @@
            (background-color style)
            (h-align style)
            (left-margin style)
-           (right-margin style))))
+           (right-margin style)
+	   (pre-decoration style)
+	   (post-decoration style))))
 
 ;;This would need a complete rewrite...
 (defmethod v-split ((content text-content) dx dy &optional (v-align :top))
@@ -90,7 +92,7 @@
 	       (if line-boxes
 		 (let ((text-line (make-instance 'text-line :dx dx :adjustable-p t)))
 		   (setf line-boxes (boxes-left-trim line-boxes))
-		   (when (member *h-align* '(:center :left))
+		   (when (member *h-align* '(:center :left :left-not-last))
 		     (push (make-hfill-glue) line-boxes))
 		   (unless (zerop *right-margin*)
 		     (push (make-instance 'h-spacing :dx *right-margin*) line-boxes))
@@ -130,7 +132,15 @@
 	       (push box text-lines))
 	      ((and trimming (trimmable-p box)) nil)
 	      ((eq box :eol)
-	       #+nil(when (eq *h-align* :justified)
+	       (when (eq *h-align* :left-not-last)
+		 ;; incredibly ugly hack - need to get rid of the
+		 ;; superfluous box added on the last line.
+		 (let ((fbox (find-if (lambda (box)
+					    (and (typep box 'h-spacing)
+						 (eql (expansibility box) +huge-number+)))
+					  line-boxes)))
+		   (if fbox (setq line-boxes (remove fbox line-boxes)))))
+	       (when (eq *h-align* :justified)
 		 (push (make-hfill-glue) line-boxes))
 	       (next-line line-boxes))
 	      ((eq box :fresh-page)

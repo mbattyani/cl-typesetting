@@ -11,6 +11,8 @@
 
 ;;
 ;; FLAG -- collect all these in *default-text-style* and *current-text-style* ;; djc
+;; Note: Don't let any of these variables become NIL, otherwise
+;; that style won't be restored after a change. cf. typo.lisp
 ;;
 (defvar *default-font* (pdf:get-font))
 (defvar *default-font-size* 12.0)
@@ -21,12 +23,16 @@
 (defvar *default-v-align* :top)
 (defvar *default-left-margin* 0)
 (defvar *default-right-margin* 0)
+(defvar *default-pre-decoration* :none)
+(defvar *default-post-decoration* :none)
 
 (defvar *font* *default-font*)
 (defvar *font-size* *default-font-size*)
 (defvar *text-x-scale* *default-text-x-scale*)
 (defvar *color* *default-color*)
 (defvar *background-color* *default-background-color*)
+(defvar *pre-decoration* *default-pre-decoration*)
+(defvar *post-decoration* *default-post-decoration*)
 (defvar *h-align* *default-h-align*)
 (defvar *v-align* *default-v-align*)
 (defvar *left-margin* *default-left-margin*)

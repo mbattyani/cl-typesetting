@@ -28,6 +28,7 @@
 		 (:file "hyphenation" :depends-on ("boxes" "hyphenation-fp"))
 		 (:file "layout" :depends-on ("typo" "graphics"))
 		 (:file "tables" :depends-on ("layout"))
+		 (:file "kw-extensions" :depends-on ("layout"))
 		 (:file "stroke" :depends-on ("layout"))
 		 (:file "top-level" :depends-on ("stroke" "typo"))
 		 (:file "test" :depends-on ("top-level" "tables" "math"))

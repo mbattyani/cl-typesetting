@@ -24,7 +24,9 @@
    (background-color :accessor background-color :initarg :background-color :initform nil)
    (h-align :accessor h-align :initarg :h-align :initform nil)
    (left-margin :accessor left-margin :initarg :left-margin :initform nil)
-   (right-margin :accessor right-margin :initarg :right-margin :initform nil)))
+   (right-margin :accessor right-margin :initarg :right-margin :initform nil)
+   (pre-decoration :accessor pre-decoration :initarg :pre-decoration :initform nil)
+   (post-decoration :accessor post-decoration :initarg :post-decoration :initform nil)))
 
 (defmethod initialize-instance :after ((obj text-style) &rest args &key font &allow-other-keys)
     (when font (setf (font obj) font)))
@@ -75,7 +77,9 @@
     (%use-style% background-color *background-color*)
     (%use-style% left-margin *left-margin*)
     (%use-style% right-margin *right-margin*)
-    (%use-style% h-align *h-align*))
+    (%use-style% h-align *h-align*)
+    (%use-style% pre-decoration *pre-decoration*)
+    (%use-style% post-decoration *post-decoration*))
   (when (or (font style)(font-size style))
     (setf *leading* (* *font-size* *leading-ratio*))))
 
@@ -87,7 +91,9 @@
   (setf (background-color style) *background-color*)
   (setf (left-margin style) *left-margin*)
   (setf (right-margin style) *right-margin*)
-  (setf (h-align style) *h-align*))
+  (setf (h-align style) *h-align*)
+  (setf (pre-decoration style) *pre-decoration*)
+  (setf (post-decoration style) *post-decoration*))
 
 (defmethod restore-default-style ((style text-style))
   (setf (font style) *default-font*)
@@ -97,7 +103,9 @@
   (setf (background-color style) *default-background-color*)
   (setf (left-margin style) *default-left-margin*)
   (setf (right-margin style) *default-right-margin*)
-  (setf (h-align style) *default-h-align*))
+  (setf (h-align style) *default-h-align*)
+  (setf (pre-decoration style) *default-pre-decoration*)
+  (setf (post-decoration style) *default-post-decoration*))
 
 (defmethod make-restore-style ((style text-style))
   (let ((new-style (make-instance 'text-style)))
@@ -111,7 +119,9 @@
       (%use-style% background-color *background-color*)
       (%use-style% left-margin *left-margin*)
       (%use-style% right-margin *right-margin*)
-      (%use-style% h-align *h-align*))
+      (%use-style% h-align *h-align*)
+      (%use-style% pre-decoration *pre-decoration*)
+      (%use-style% post-decoration *post-decoration*))
     new-style))
 
 (defmethod copy-style ((style text-style))
@@ -121,7 +131,9 @@
 		 :background-color (background-color style)
 		 :left-margin (left-margin style)
 		 :right-margin (right-margin style)
-		 :h-align (h-align style)))
+		 :h-align (h-align style)
+		 :pre-decoration (pre-decoration style)
+		 :post-decoration (post-decoration style)))
 
 (defclass text-line (hbox)
   ())
@@ -216,8 +228,8 @@
 		(add-box (make-char-box char))
 		(add-box (make-inter-char-glue))))))))
 
-;;; put a string in a 'verbatim' way: no kerning, no hyphenation, significant whitespaces, significant newlines
 (defun verbatim (string)
+  "put a string in a 'verbatim' way: no kerning, no hyphenation, significant whitespaces, significant newlines"
   (when (stringp string)
     (loop for char across string
 	  for i from 0
@@ -273,7 +285,9 @@
 	    (*h-align* *default-h-align*)
 	    (*v-align* *default-v-align*)
 	    (*left-margin* *default-left-margin*)
-	    (*right-margin* *default-right-margin*))
+	    (*right-margin* *default-right-margin*)
+	    (*pre-decoration* *default-pre-decoration*)
+	    (*post-decoration* *default-post-decoration*))
       (progn ,@body))))
 
 (defmacro compile-text ((&rest args) &body body)
