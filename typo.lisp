@@ -4,7 +4,7 @@
 (in-package typeset)
 
 (defclass style ()
-  ())
+  ((name :accessor name :initform nil)))
 
 (defmethod use-style (style)
   )
@@ -225,6 +225,23 @@
 
 (defmethod insert-stuff ((obj symbol))
   `(put-string (format nil "~a" ,obj)))
+
+(defmacro with-text-content ((content &key dont-save-style) &body body)
+  (with-gensyms (the-content)
+    `(let* ((,the-content ,content)
+	    (*content* ,the-content)
+	    (*font* *default-font*)
+	    (*font-size* *default-font-size*)
+	    (*text-x-scale* *default-text-x-scale*)
+	    (*color* *default-color*)
+	    (*back-color* *default-back-color*)
+	    (*h-align* *default-h-align*)
+	    (*v-align* *default-v-align*)
+	    (*left-margin* *default-left-margin*)
+	    (*right-margin* *default-right-margin*))
+      (use-style (text-style ,the-content))
+      (prog1 (progn ,@body)
+	(unless ,dont-save-style (save-style (text-style ,the-content)))))))
 
 (defmacro with-text-content ((content &key dont-save-style) &body body)
   `(let* ((*content* ,content)

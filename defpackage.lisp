@@ -6,4 +6,18 @@
 (defpackage typeset
   (:use common-lisp)
   (:export
+   #:with-text-content
+   #:paragraph
+   #:with-style #:set-style #:with-style
+   #:table #:row #:cell
+   #:put-string
+   #:make-filled-vbox
+   #:vspace #:hspace
+   #:with-offset #:with-superscript #:with-subscript
+   #:hrule #:image #:background-image
+   #:display-formula #:fraction #:math-super-and-sub-script
+   #:vbox #:hbox 
    ))
+
+
+

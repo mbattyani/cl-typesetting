@@ -296,7 +296,8 @@
 			    (with-style (:font "Times-Italic" :font-size 9)
 			      "marc.battyani@fractalconcept.com") "."
 			    ))))
-	  (pdf::draw-bar-code128 "CODE128BARCODE" 10 30 :line-height 20 :line-width 0.7)
+	  (pdf::draw-bar-code128 "CODE128BARCODE" 10 35 :height 25 :width 150 :start-stop-factor 0.25
+				 :font-size 7 :show-string t)
 	  (draw-block content 40 800 250 380 5)
 	  (draw-block content 50 425 250 380 -5)
 	  (draw-block content 330 800 250 380 -2 :special-fn 'link-all-a-and-spaces)
