@@ -1,0 +1,202 @@
+;;; cl-typesetting copyright 2003 Marc Battyani see license.txt for details of the license
+;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
+
+(in-package typeset)
+
+(defclass hyphen-box ()
+  ((cost :accessor cost :initform 0 :initarg :cost)
+   (char-box :accessor char-box :initform nil :initarg :char-box)))
+
+(defmethod convert-hyphen-to-char-box ((box hyphen-box))
+  (char-box box))
+
+(defmethod convert-hyphen-to-char-box (box)
+  box)
+
+(defmethod cut-point-p (box)
+  nil)
+
+(defmethod cut-point-p ((box (eql :eol)))
+  t)
+
+(defmethod cut-point-p ((box hyphen-box))
+  t)
+
+(defmethod cut-point-p ((box white-char-box))
+  t)
+
+(defmethod cut-point-p ((box char-box))
+  (char= (pdf:hyphen-char *font*)(boxed-char box)))
+
+;;This needs a complete rewrite...
+(defmethod split-lines (boxes dx dy &optional (v-align :top))
+  (let* ((boxes-left boxes)
+	 (text-lines ())
+	 (line-boxes ())
+	 (last-cut-point nil)
+	 (last-cut-boxes-left ())
+	 (trimming t)
+	 (x 0)
+	 (next-x 0)
+	 (last-x dx))
+    (when (member v-align '(:centered :bottom))
+      (push (make-vfill-glue) text-lines))
+    (labels ((return-lines ()
+	       (when (member v-align '(:centered :top))
+		 (push (make-vfill-glue) text-lines))
+	       (return-from split-lines (values (nreverse text-lines) boxes-left)))
+	     (abort-line ()
+	       (setf boxes-left boxes)
+	       (return-lines))
+	     (init-line ()
+	       (setf line-boxes nil last-cut-point nil last-cut-boxes-left nil
+		     trimming t next-x 0 last-x (- dx *right-margin*)))
+	     (start-line ()
+	       (setf last-x (- dx *right-margin*) trimming nil)
+	       (unless (zerop *left-margin*)
+		 (push (make-instance 'h-spacing :dx *left-margin*) line-boxes)
+		 (incf next-x *left-margin*))
+	       (when (member *h-align* '(:centered :right))
+		 (push (make-hfill-glue) line-boxes)))
+	     (next-line (line-boxes)
+	       (if line-boxes
+		 (let ((text-line (make-instance 'text-line :dx dx :adjustable-p t)))
+		   (setf line-boxes (boxes-left-trim line-boxes))
+		   (when (member *h-align* '(:centered :left))
+		     (push (make-hfill-glue) line-boxes))
+		   (unless (zerop *right-margin*)
+		     (push (make-instance 'h-spacing :dx *right-margin*) line-boxes))
+		   (setf (boxes text-line)(nreverse line-boxes))
+		   (decf dy (dy text-line))
+		   (when (minusp dy) (abort-line))
+		   (setf boxes boxes-left)
+		   (when (and text-lines (not (zerop dy)))
+		     (push (make-inter-line-glue (dy text-line)) text-lines))
+		   (push text-line text-lines))
+		 (setf boxes boxes-left))
+	       (init-line)))
+      (loop for box = (pop boxes-left)
+	    for box-size = (dx box)
+	    while box
+	    do
+	    (setf next-x (+ x box-size))
+	    (when (and (cut-point-p box)(> x 0))
+	      (setf last-cut-point box
+		    last-cut-boxes-left boxes-left))
+	    (when (and trimming (not (trimable-p box))(> box-size 0))
+	      (start-line))
+	    (when (style-p box)
+	      (use-style box))
+	    (cond
+	      ((vmode-p box)
+	       (next-line line-boxes)
+	       (decf dy (dy box))
+	       (when (minusp dy) (push box boxes-left)(return-lines))
+	       (push box text-lines))
+	      ((and trimming (trimable-p box)) nil)
+	      ((eq box :eol)
+	       (when (eq *h-align* :justified)
+		 (push (make-hfill-glue) line-boxes))
+	       (next-line line-boxes))
+	      ((<= next-x last-x) (push box line-boxes))
+	      ((and last-cut-point (not (eq box last-cut-point)))
+	       (setf boxes-left last-cut-boxes-left)
+	       (next-line (cons (convert-hyphen-to-char-box last-cut-point)
+				(cdr (member last-cut-point line-boxes)))))
+	      (t (unless line-boxes (error "could not fit anything"))
+	       (next-line line-boxes) (setf boxes-left (cons box boxes-left))))
+	    (setf x next-x)
+	    finally
+	    (when line-boxes (next-line line-boxes)))
+      (return-lines))))
+
+(defmethod do-layout (box)
+  )
+
+(defmethod do-layout ((hbox hbox))
+  (loop with dy = (dy hbox) and baseline = (internal-baseline hbox)
+	for box in (boxes hbox)
+	do (adjust-box-dy box dy baseline))
+  (spread-boxes (boxes hbox) (dx hbox) #'dx)
+  (map nil 'do-layout (boxes hbox)))
+
+(defmethod do-layout ((vbox vbox))
+  (loop with dx = (dx vbox) and baseline = (internal-baseline vbox)
+	for box in (boxes vbox)
+	do (adjust-box-dx box dx baseline))
+  (spread-boxes (boxes vbox) (dy vbox) #'dy)
+  (map nil 'do-layout (boxes vbox)))
+
+(defun spread-boxes (boxes final-size size-fn &optional (first-pass t))
+  (when first-pass
+    (dolist (box boxes)
+      (when (soft-box-p box)
+	(setf (locked box) nil
+	      (delta-size box) 0))))
+  (multiple-value-bind (size max-expansion expansibility max-compression compressibility)
+      (compute-boxes-elasticity boxes size-fn)
+    (let ((final-pass t))
+      (cond
+	((and (< size (- final-size +epsilon+)) (> max-expansion +epsilon+))
+	 (let ((delta-size (- final-size size)))
+	   (when (> delta-size max-expansion) (setf delta-size max-expansion))
+	   (setf delta-size (/ delta-size expansibility))
+	   (dolist (box boxes)
+	     (unless (locked box)
+	       (let* ((max-expansion (max-expansion box))
+		      (expansibility (expansibility box))
+		      (box-delta-size (* expansibility delta-size)))
+		 (when (> box-delta-size max-expansion)
+		   (setf (locked box) t
+			 box-delta-size max-expansion
+			 final-pass nil))
+		 (setf (delta-size box) box-delta-size))))))
+	((and (> size (+ final-size +epsilon+))(> max-compression +epsilon+))
+	 (let ((compression (- size final-size)))
+	   (when (> compression max-compression) (setf compression max-compression))
+	   (setf compression (/ compression compressibility))
+	   (dolist (box boxes)
+	     (unless (locked box)
+	       (let* ((max-compression (max-compression box))
+		      (compressibility (compressibility box))
+		      (box-compression (* compressibility compression)))
+		 (when (> box-compression max-compression)
+		   (setf (locked box) t
+			 box-compression max-compression
+			 final-pass nil))
+		 (setf (delta-size box) (- box-compression))))))))
+      (unless final-pass
+	(spread-boxes boxes final-size size-fn nil)))))
+
+(defun boxes-left-trim (boxes)
+  (let ((start (position-if-not #'trimable-p boxes)))
+      (if (and start (> start 0))
+	  (subseq boxes start)
+	  boxes)))
+
+(defun boxes-right-trim (boxes)
+  (let ((stop  (position-if-not #'trimable-white-space-p boxes :from-end t)))
+    (when stop
+      (incf stop)
+      (if (< stop (length boxes))
+	  (subseq boxes 0 stop)
+	  boxes))))
+
+(defun boxes-trim (boxes)
+  (let ((start (position-if-not #'trimable-p boxes))
+	(stop  (position-if-not #'trimable-p boxes :from-end t)))
+    (when (and start stop)
+      (incf stop)
+      (if (or (> start 0)(< stop (length boxes)))
+	  (subseq boxes start stop)
+	  boxes))))
+
+(defun make-filled-vbox (content dx dy &optional (v-align :top))
+  (with-text-content (content)
+    (multiple-value-bind (lines boxes-left) (split-lines (boxes content) dx dy v-align)
+      (when lines
+	(let* ((box (make-instance 'vbox :dx dx :dy dy :boxes lines :fixed-size t)))
+	  (do-layout box)
+	  (setf (boxes content) boxes-left)
+	  box)))))
+

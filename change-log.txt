@@ -1,0 +1,23 @@
+;;; cl-typesetting copyright 2002 Marc Battyani see license.txt for details of the license
+;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
+
+This is the change log for cl-typesetting. 
+See also contributors.txt and to-do.txt
+
+October 29 2003: Pre-Release 0.64
+   Added contibutors.txt and to-do.txt
+   Added text-x-scale
+
+October 24 2003: Pre-Release 0.63
+   Added :allow-other-keys t for some make-instance calls. Lispworks is too tolerant here :)
+
+October 24 2003: Pre-Release 0.62
+   More compliant loops, some typos corrected.
+   Added the TeX fonts files and the jpeg files for the example.
+
+October 23 2003: Pre-Release 0.61
+   Put &allow-other-keys for the more strict implementations.
+   Added a very simple hello world example.
+
+October 20 2003: Pre-Release 0.6
+   First public release.

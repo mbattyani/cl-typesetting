@@ -1,0 +1,37 @@
+;;; cl-typesetting copyright 2002 Marc Battyani see license.txt for details of the license
+;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
+
+If you have some time and want to contribute, here are some things needed by cl-typesetting.
+This list is not exhaustive
+
+-User friendly syntaxes above the core syntax layer. (TeX syntax emulation,
+ markup languages, alternative languages like Scribble, etc...)
+
+-Completing the tables. (multipage support, more options for the cells, cell styles, etc.)
+
+-Completing the math mode and adding standard math-syntaxes (TeX, mathML)
+
+-Adding commands for things like lists, enumerated lists, choosing the
+ hyphenation language, etc.
+
+-Improving the styles handling (paragraph, titles styles etc.)
+
+-Adding higher level processing functions like tables of content, indexes,
+ sections/subsections numbering, etc.
+
+-Adding stuff for easily defining page dimensions, headers, footers, margins, etc.
+
+-Completing and improving the core typesetting engine. (multi-lines
+ hyphenation, rivers, grid-mode, etc.)
+
+-Native integration and improvement of the cl-pdf charts (pie, histogram, lines, etc.)
+
+-Making a stand alone executable so that non-lispers can use it.
+
+-Making a typesetting server (webservice ?) so that non-lispers can use it.
+
+-etc.
+
+If you are interested by this or if you have other ideas, send them to me.
+
+Marc Battyani ("marc.battyani@fractalconcept.com")

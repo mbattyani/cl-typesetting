@@ -1,0 +1,12 @@
+
+I'd like to thank the following individuals for their contributions to cl-typesetting:
+
+David J Cooper Jr (ACL compatibility, text-x-scale)
+Fabrice Popineau (TeX hyphenation algorithm)
+Klaus Weidner (CMUCL compatibility)
+
+I apologize if I've missed someone. Please let me know if that's the case.
+
+I'd also like to thank all those who have sent me bugs and portability fixes...
+
+Marc Battyani ("marc.battyani@fractalconcept.com")
