@@ -417,7 +417,7 @@
                 (dotimes (j (1+ (random 5)))
                   (put-string "The quick brown fox jumps over the lazy dog. "))))
             
-            (table (:col-widths '(20 100 100 100) :inline nil :splittable-p nil
+            (table (:col-widths '(20 100 100 100) :splittable-p nil
                             :border 0 :background-color '(1 1 0.8))
               (row ()
                 (cell (:col-span 4)
@@ -440,13 +440,14 @@
     (draw-pages content :margins margins :header header :footer footer)
 
     (setq content
-          (table (:col-widths '(20 100 100 100) :inline t :splittable-p t
+          (compile-text ()
+          (table (:col-widths '(20 100 100 100) :splittable-p t
                           :border 1/2 :background-color '(1 1 0.8))
             (header-row (:background-color :gray)
               (cell (:row-span 2) (verbatim "Row #"))
               (cell (:row-span 2) "Name")
               (cell () "Telephone")
-                ;(table (:col-widths '(100) :inline t :splittable-p nil
+                ;(table (:col-widths '(100) :splittable-p nil
                 ;                :padding 0 :border 1/2); :background-color '(1 1 0.8))
                 ;  (row () (cell () "Telephone"))
                 ;  (row () (cell () "Fax"))))
@@ -469,14 +470,15 @@
                     (cell (:background-color (when (>= age 40) :blue))
                                    name)
                     (cell () tel)
-                    (cell () (paragraph (:h-align :right) age))))))
+                    (cell () (paragraph (:h-align :right) age)))))))
     (setq table content)
     (draw-pages content :margins margins :header header :footer footer) ;:break :after
     
     (setq content	;; Various spans
+          (compile-text ()
           (table (:col-widths '(20 40 60 80 120)
                           :background-color :yellow :border 1
-                          :inline 1 :splittable-p 1)
+                          :splittable-p t)
             (header-row ()
               (cell (:col-span 5)
                 (paragraph (:h-align :center
@@ -499,7 +501,7 @@
               (cell () "4,2")
               (cell () "4,3")
               (cell () "4,4")
-              (cell () "4,5"))))
+              (cell () "4,5")))))
     (draw-pages content :margins margins :header header :footer footer) ;:break :after
 
     (draw-block (compile-text () "Test block - line1" :eol "Line 2")
@@ -516,7 +518,13 @@
      (let ((content
    (compile-text ()
      (vspace 100)
-     (table (:col-widths '(100 200) :splittable-p 1 :inline t)  ;;; start Erik changes
+     (table (:col-widths '(100 200) :splittable-p t)  ;;; start Erik changes
+	    (header-row ()
+			(cell ()
+                         (paragraph () "Header")))
+	    (footer-row ()
+			(cell ()
+                         (paragraph () "Footer")))
             (dotimes (time 50)
               (row ()
                    (cell ()

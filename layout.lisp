@@ -43,7 +43,7 @@
 	   (post-decoration style))))
 
 ;;This would need a complete rewrite...
-(defmethod v-split ((content text-content) dx dy &optional (v-align :top))
+(defmethod fit-lines ((content text-content) dx dy &optional (v-align :top)(advance t))
   (let* ((boxes (boxes content))
          (boxes-left boxes)
 	 (text-lines ())
@@ -73,7 +73,9 @@
 		      (setq text-lines nil))
 		     ((member v-align '(:center :top))
 		      (setq text-lines (cons (make-vfill-glue) text-lines))))
-	       (return-from v-split (values (nreverse text-lines) boxes-left dy-left)))
+	       (when advance 
+		 (setf (boxes-left content) boxes-left))
+	       (return-from fit-lines (values (nreverse text-lines) dy-left)))
 	     (abort-line ()
 	       (setf boxes-left boxes)
 	       (return-lines))
@@ -121,15 +123,15 @@
 	      ((vmode-p box)
 	       (next-line line-boxes)
 	       (decf dy (dy box))
-	       (when (minusp dy)
-                 ;; Embedded vmode element does not fit - verify for multi-page
-                 (incf dy (dy box))
-                 (push box boxes-left)
-                 (multiple-value-bind (boxes boxes-left dy-left) (v-split box dx dy)
-		   (declare (ignore boxes-left))
-                   (setf text-lines (revappend boxes text-lines))
-                   (return-lines dy-left)))
-	       (push box text-lines))
+	       (if (minusp dy)
+		     ;; try to split object
+		   (multiple-value-bind (box-fitted box-left dy-left) (v-split box dx (+ dy (dy box)))
+		     (when box-left
+		       (push box-left boxes-left))
+		     (when box-fitted
+		       (push box-fitted text-lines))
+		       (return-lines dy-left))
+		   (push box text-lines)))
 	      ((and trimming (trimmable-p box)) nil)
 	      ((eq box :eol)
 	       (when (eq *h-align* :left-not-last)
@@ -258,12 +260,10 @@
 (defun make-filled-vbox (content dx dy &optional (v-align :top) (advance t))
  ;;; Args: advance  If true, assign new boxes-left.
   (with-text-content (content)
-    (multiple-value-bind (boxes boxes-left) (v-split content dx dy v-align)
+    (multiple-value-bind (boxes) (fit-lines content dx dy v-align advance)
       (when boxes
 	(let* ((vbox (make-instance 'vbox  :dx dx :dy dy  :boxes boxes  :fixed-size t)))
 	  (do-layout vbox)
-          (when advance
-            (setf (boxes-left content) boxes-left))
 	  vbox)))))
 
 #+nil

@@ -28,27 +28,22 @@
 
 (defclass table (box v-mode-mixin)
   ((cols-widths :accessor col-widths :initform nil :initarg :col-widths)
+   (h-align :accessor h-align :initform :top :initarg :h-align)
+   (splittable-p :accessor splittable-p :initform t :initarg :splittable-p)
    (border :accessor border :initform 1 :initarg :border)
    (border-color :accessor border-color :initform '(0 0 0) :initarg :border-color)
    (background-color :accessor background-color :initform nil :initarg :background-color)
    (padding :accessor padding :initform 1 :initarg :padding)
    (cell-padding :accessor cell-padding :initform 1 :initarg :cell-padding)
-   (rows :accessor rows :initform ())))
+   (rows :accessor rows :initform ())
+   (header :accessor header :initarg :header :initform nil) ; rows printed on each page
+   (footer :accessor footer :initarg :footer :initform nil) ; rows printed on each page
+   (header&footer-height :accessor header&footer-height :initform 0)
+   ))
 
-(defclass multi-page-table (table)
- ((header :accessor header :initarg :header :initform nil) ; rows printed on each page
-  (footer :accessor footer :initarg :footer :initform nil) ; rows printed on each page
-  (rows-left :accessor rows-left :initform ())))
-
-(defclass splitted-multi-page-table ()
-  ((table :accessor table :initform nil :initarg :table)
-   (first-row :accessor first-row :initform 0 :initarg :first-row)
-   (last-row :accessor last-row :initform 0 :initarg :last-row)))
-
-(defclass multi-page-row (table-row)
- ((parent :accessor parent :initform *table* :initarg :parent)
-  ;; padding control - :first, :last or :single
-  (position :initarg :position :initform nil)))
+(defclass splitted-table (box v-mode-mixin)
+  ((original-table :accessor original-table :initform nil :initarg :original-table)
+   (rows :accessor rows :initform nil :initarg :rows)))
 
 (defun add-table-row (row &optional (table *table*))
   (if (rows table)
@@ -59,17 +54,6 @@
   (if (cells row)
       (setf (cdr (last (cells row))) (list cell))
       (setf (cells row) (list cell))))
-
-(defmethod dy ((row multi-page-row))
- ;;; Called by method (stroke (box vbox) x y) after the row is factored out
-  (let* ((table (parent row))
-         (border (border table)))
-    (+ (height row) border (* 2 (cell-padding table))
-       (case (slot-value row 'position)
-         (:first  (+ border (padding table)))
-         (:last   (padding table))
-         (:single (+ border (* 2 (padding table))))
-         (otherwise 0)))))
 
 (defun first-or-self (arg)
  ;;; The first element of arg, if it is a list; else arg itself.
@@ -165,10 +149,20 @@
     height))
 
 (defmethod compute-table-size (table)
+  (loop for rows on (header table)
+        do (compute-row-size table (first rows) rows))
   (loop for rows on (rows table)
         do (compute-row-size table (first rows) rows))
-  (let ((nb-rows (length (rows table)))
+  (loop for rows on (footer table)
+        do (compute-row-size table (first rows) rows))
+  (let ((nb-h&f (+ (length (header table))(length (footer table))))
+	(nb-rows (length (rows table)))
 	(nb-cols (length (col-widths table))))
+    (setf (header&footer-height table)
+	  (+ (* 2 nb-h&f (cell-padding table))
+	     (* nb-h&f (border table))
+	   (reduce #'+ (header table) :key 'height)
+	   (reduce #'+ (footer table) :key 'height)))
     (setf (dx table)(+ (* 2 (padding table))
 		       (* 2 nb-cols (cell-padding table))
 		       (* (1+ nb-cols) (border table))
@@ -178,147 +172,77 @@
 		       (* 2 nb-rows (cell-padding table))
 		       (* (1+ nb-rows) (border table))
 		       (reduce #'+ (rows table) :key 'height)
+		       (header&footer-height table)
 		       +epsilon+))))
 
-(defmethod compute-table-size :after ((table multi-page-table))
-  (with-slots (rows rows-left header footer) table
-    (setf rows-left rows)
-    (dolist (row header) (compute-row-size table row header))
-    (dolist (row footer) (compute-row-size table row footer))))
-                
-(defmethod v-split ((table multi-page-table) dx dy &optional v-align)
-  "Factor out rows that fit and return as a first value."
+(defmethod v-split ((table table) dx dy)
+  "Factor out rows that fit and return a splitted table + the table."
   ;; Treat unsplittable rows as a single unit - for this purpose,
-  ;; group the rows-left list into the following form:
+  ;; group the rows list into the following form:
   ;;
   ;;     ( (group1-height row1 row2 ...)
   ;;       (group2-height row7)
   ;;       (group3-height row8 row9 ...) )
   ;;
-  (with-slots (header footer border padding cell-padding) table
-    (loop with boxes = ()
-	  with header+footer-height = (+ (reduce #'+ header :key #'dy)
-					 (reduce #'+ footer :key #'dy))
-	  with current-height = (+ border padding)
-	  with available-height = (- dy header+footer-height)
-	  with row-groups = (loop with height = 0
-				  and  rows = ()
-	
-				  for row in (rows-left table)
+  (if (splittable-p table)
+      (with-slots (header footer border padding cell-padding) table ;(print (rows table))
+	(loop with fitted-rows = ()
+	      with header&footer-height = (header&footer-height table)
+	      with padding&border = (+ (* 2 cell-padding) border)
+	      with current-height = (+ border padding)
+	      with available-height = (- dy header&footer-height)
+	      with row-groups = (loop with height = 0
+				      and  rows = ()
+				      for row in (rows table)
+				      do
+				      (incf height (+ (height row) padding&border))
+				      (push row rows)
+				      when (splittable-p row)
+				      collect (cons height (nreverse rows))
+				      and do (setf height 0 rows nil))
+	      with rows-remaining = (rows table)
+	      
+	      for (group-height . rows) in row-groups
+	      while (<= (+ current-height group-height) available-height)
+	      
+	      do (dolist (r rows)
+		   (push r fitted-rows)
+		   (pop rows-remaining))
+	      (incf current-height group-height)
+	      
+	      finally
+	      (when fitted-rows
+		(setq boxes (append header  footer))
+		;; reduce rows to output
+		(setf (rows table) rows-remaining)
+		;; reduce space required by table (don't subtract header/footer)
+		(decf (dy table) current-height)
+		(return (values (make-instance 'splitted-table :rows (nreverse fitted-rows)
+					       :original-table table
+					       :dx (dx table)
+					       :dy (+ current-height header&footer-height))
+				table
+				(- dy current-height header&footer-height))))
+	      (return (values nil table dy))))
+      (values nil table dy)))
 
-				  do
-				  (incf height (+ (height row)
-						  (* 2 cell-padding)
-						  border))
-				  (push row rows)
-
-				  when (splittable-p row)
-				  collect (cons height (nreverse rows))
-				  and do (setf height 0 rows nil))
-	  with rows-remaining = (rows-left table)
-	  
-          for (group-height . rows) in row-groups
-	  while (<= (+ current-height group-height) available-height)
-
-	  do (dolist (r rows)
-	       (push r boxes)
-	       (pop rows-remaining))
-	  (incf current-height group-height)
-	  
-	  finally
-	  (when boxes
-	    (setq boxes (append header (nreverse boxes) footer))
-	    ;; reduce rows to output
-	    (setf (rows-left table) rows-remaining)
-	    ;; reduce space required by table (don't subtract header/footer)
-	    (decf (slot-value table 'dy) current-height)
-            (let ((first (first boxes))
-                  (last (first (last boxes))))
-              (setf (slot-value first 'position) :first
-                    (slot-value last 'position) (if (eq first last) :single :last)))
-	    (return (values boxes
-			    rows-remaining
-			    (- dy current-height header+footer-height))))
-	  (return (values nil rows-remaining dy)))))
-
-(defmethod dy :around ((table multi-page-table))
-  (with-slots (header footer) table
-    (+ (call-next-method)
-       (reduce #'+ header :key #'dy)
-       (reduce #'+ footer :key #'dy))))
-
-(defmethod boxes-left ((table multi-page-table))
-  (rows-left table))
-
-(defmethod stroke ((row multi-page-row) x y)
-  (let* ((table (parent row))
-         (position (slot-value row 'position))
-         (border (border table))
-         (padding (padding table))
-         (row-y (case position ((:first :single) (- y border padding)) (otherwise y)))
-         (cell-padding (cell-padding table))
-         (cell-offset (+ cell-padding border))
-         (full-size-offset (+ cell-offset cell-padding)))
-    ;; Provide outer colorful padding which does not breach the border
-    (when (and (background-color table) (not (zerop padding)) (zerop border))
-      (let ((height (height row)))
-        (pdf:with-saved-state
-          (pdf:set-color-fill (background-color table))
-          (case position
-            ((:first :single)							; top  
-             (pdf:basic-rect x y (dx table) (- padding))
-             (pdf:fill-path)))
-          (pdf:basic-rect x row-y padding (- (+ height full-size-offset)))	; left
-          (pdf:fill-path)
-          (pdf:basic-rect (+ x (dx table)) row-y
-                          (- padding) (- (+ height full-size-offset)))		; right
-          (pdf:fill-path)
-          (case position
-            ((:last :single)							; bottom
-             (pdf:basic-rect x (- row-y height full-size-offset)
-                             (dx table) (- padding))
-             (pdf:fill-path))) )))
-	
-    (loop for cell-x = (+ x padding border) then (+ cell-x width full-size-offset)
-          and cell in (cells row)
-          for width = (width cell)
-          and height = (height cell)
-          when (cell-start-row-p cell row)
-          do (pdf:with-saved-state
-               (pdf:translate cell-x row-y)
-               (pdf:with-saved-state
-                 (let ((background-color (or (background-color cell)
-                                             (background-color row)
-                                             (background-color table))))
-                   (when background-color
-                     (pdf:set-color-fill background-color)
-                     (pdf:basic-rect 0 0 (+ width full-size-offset)
-                                     (- (+ height full-size-offset)))
-                     (pdf:fill-path)))
-                 (unless (zerop border)
-                   (pdf:set-line-width border)
-                   (pdf:set-gray-stroke 0)
-                   (pdf:basic-rect 0 0 (+ width full-size-offset)(- (+ height full-size-offset)))
-                   (pdf:stroke)))
-               (stroke (box cell) cell-offset (- cell-offset))))))
-
-(defmethod stroke ((table table) x y)
+(defun stroke-table (table x y rows dy)
   (let* ((padding (padding table))
          (border (border table)))
     (when (background-color table)
       (pdf:with-saved-state
         (pdf:set-color-fill (background-color table))
         (if (or (zerop padding) (zerop border))
-            (pdf:basic-rect x y (dx table) (- (dy table)))
+            (pdf:basic-rect x y (dx table) (- dy))
             ;; External colorful padding should not breach border
             (pdf:basic-rect (+ x padding border) (- y padding border)
                             (- (dx table) (* 2 (+ padding border)))
-                            (- (* 2 (+ padding border)) (dy table))))
+                            (- (* 2 (+ padding border)) dy)))
         (pdf:fill-path)))
     (loop with cell-padding = (cell-padding table)
           with cell-offset = (+ cell-padding border)
           with full-size-offset = (+ cell-offset cell-padding)
-          for row in (rows table)
+          for row in (append (header table) rows (footer table))
           for row-y = (- y padding border) then (- row-y height full-size-offset)
           and height = (height row)
           do (loop for cell-x = (+ x padding border) then (+ cell-x width full-size-offset)
@@ -343,6 +267,12 @@
                             (pdf:stroke)))
                         (stroke (box cell) cell-offset (- cell-offset)))))))
 
+(defmethod stroke ((table splitted-table) x y)
+  (stroke-table (original-table table) x y (rows table) (dy table)))
+
+(defmethod stroke ((table table) x y)
+  (stroke-table table x y (rows table) (dy table)))
+
 ;;; Convenience macros 
 
 (defmacro table ((&key col-widths
@@ -350,44 +280,35 @@
                        (border 1) (border-color #x00000) 
 		       background-color
                        header footer
-                       inline (splittable-p (or header footer)))
+                       (splittable-p (and (or header footer) t)))
 		 &body body)
   (with-gensyms (hbox)
-    `(let* ((*table* (make-instance (if ,splittable-p 'multi-page-table 'table)
+    `(let* ((*table* (make-instance 'table :splittable-p ,splittable-p
                                     ,@(when header `((:header ,header)))
                                     ,@(when footer `((:footer ,footer)))
                                     :col-widths ,col-widths
                                     :padding ,padding :cell-padding ,cell-padding
                                     :background-color ,background-color
-				    :border ,border :border-color ,border-color))
-	    ,@(unless inline `((,hbox (make-instance 'hbox :boxes
-				       (list (make-hfill-glue) *table* (make-hfill-glue))
-				       :adjustable-p t)))))
-      (add-box ,(if inline '*table* hbox))
+				    :border ,border :border-color ,border-color)))
+      (add-box *table*)
       ,@body
       (compute-table-size *table*)
-      ,@(unless inline `((compute-natural-box-size ,hbox)))
       *table*)))
 
 (defmacro header-row ((&rest args) &body body)
-  `(let* ((*table-row* (make-instance 'multi-page-row :splittable-p nil ;:position :first 
-                                      ,@args)))
+  `(let* ((*table-row* (make-instance 'table-row :splittable-p nil ,@args)))
     (setf (header *table*) (nconc (header *table*) (list *table-row*)))
     ,@body
     *table-row*))
 
 (defmacro footer-row ((&rest args) &body body)
-  `(let* ((*table-row* (make-instance 'multi-page-row :splittable-p nil ;:position :last
-                                      ,@args)))
+  `(let* ((*table-row* (make-instance 'table-row :splittable-p nil ,@args)))
     (setf (footer *table*) (nconc (footer *table*) (list *table-row*)))
     ,@body
     *table-row*))
 
 (defmacro row ((&rest args) &body body)
-  `(let ((*table-row* (make-instance (if (typep *table* 'multi-page-table)
-                                         'multi-page-row
-                                         'table-row)
-                                     ,@args)))
+  `(let ((*table-row* (make-instance 'table-row ,@args)))
      (add-table-row *table-row*)
      ,@body
      *table-row*))

@@ -115,13 +115,12 @@
                                    y  (+ dy bottom-margin))
                              (invoke-restart restart y))
                             ((loop-finish))))))
-              (multiple-value-bind (boxes boxes-left dy-left) (v-split content dx dy :top)
+              (multiple-value-bind (boxes dy-left) (fit-lines content dx dy :top)
                 (cond (boxes
                        (let ((vbox (make-instance 'vbox  :boxes boxes  :dx dx  :dy dy 
                                                   :fixed-size t)))
                          (do-layout vbox)
-                         (setf (boxes-left content) boxes-left
-                               (room-left pdf:*page*) dy-left)
+                         (setf (room-left pdf:*page*) dy-left)
                          (stroke vbox x y)))
                       ;; As no new lines can fit, check whether the page was just started
                       ((> (abs (- dy (- height top-margin bottom-margin))) +epsilon+)

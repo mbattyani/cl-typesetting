@@ -176,13 +176,15 @@
 (defmethod adjust-box-dy (box dy baseline)
   nil)
 
-(defgeneric v-split (content dx dy &optional v-align)
- ;;; Split the content object vertically into two parts
+(defgeneric v-split ((box v-mode-mixin) dx dy)
+ ;;; Split a v-mode box vertically into two parts
   ;; Args: dx - area width, dy - area height
-  ;; Values: boxes-fit, boxes-left, dy-left
+  ;; Values: box-fitted, box-left, dy-left
  (:method (content dx dy &optional v-align)
   (declare (ignore dx v-align))
-  (values nil nil dy)))
+  (if (> (dy box) dy)
+      (values nil box dy)
+      (values box nil (- dy (dy box))))))
 
 (defgeneric boxes-left (content))
 
