@@ -188,16 +188,13 @@
 
 (defmacro with-document ((&rest args) &body body)
   `(let ((*reference-table* (make-hash-table :test #'equal))
-	 (*previous-reference-table* nil)
 	 (*undefined-references* t)
 	 (*changed-references* nil)
 	 (*contextual-variables* nil))
     (loop for *current-pass* from 1 to *max-number-of-passes*
           while (or *undefined-references* *changed-references*)
 	  do
-	  (setf *previous-reference-table* *reference-table*
-		*reference-table* (make-hash-table :test #'equal)
-		*undefined-references* nil
+	  (setf *undefined-references* nil
 		*changed-references* nil
 		*contextual-variables* nil)
 	  (pdf:with-document (,@args)
@@ -209,11 +206,3 @@
   (when (final-pass-p)
     (pdf:write-document filename document)))
 
-;(let* ((pdf:*document* (make-instance 'document ,@args))
-;	    (pdf::*outlines-stack* (list (pdf::outline-root pdf:*document*)))
-;	    (pdf::*root-page* (pdf::root-page pdf:*document*))
-;	    (pdf:*page* nil)
-;	    (pdf:*page-number* 0)
-;	    (pdf::*page-stream* (make-string-output-stream)))
-;       (with-standard-io-syntax
-;	   ,@body))
