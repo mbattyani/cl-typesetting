@@ -60,6 +60,9 @@
     (#\? 1.5 15.0 3.0 0.7 2.0)
     (#\, 1.2 12.0 3.0 0.7 2.0)))
 
+(defvar *current-pass* nil)
+(defvar *max-number-of-passes* 2)
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
 (defmacro with-gensyms ((&rest names) &body body)
   `(let (,@(mapcar (lambda (sym) `(,sym (gensym ,(symbol-name sym)))) names))
@@ -95,5 +98,4 @@
   (:report (lambda (c stream)
              (format stream "Unable to fit object~@[ ~s~] even on a new page."
                      (box c)))))
-
 

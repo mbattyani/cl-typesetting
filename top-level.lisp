@@ -31,15 +31,6 @@
                        ((or (cdr pair) 841)))))
     (vector 0 0 width height)))
 
-(defclass document (pdf::document)
- ((page-class :reader page-class :initform 'page)
-  ;(page-number :initarg page-number :accessor page-number)
-))
-
-(defmethod pages ((doc document))
-  (declare (ignore doc))
-  (and pdf::*root-page* (pdf::pages pdf::*root-page*)))
-
 (defclass page (pdf::page)
  ((margins :accessor margins :initarg :margins :initform nil)	; :type quad
   (header :accessor header :initarg :header :initform nil)
@@ -77,7 +68,8 @@
    (let* ((bounds (or bounds (compute-page-bounds size orientation)))
           (height (aref bounds 3)))
     (flet ((add-page ()
-             (setq pdf:*page* (apply #'make-instance (page-class pdf:*document*)
+	     (incf pdf:*page-number*)
+             (setq pdf:*page* (apply #'make-instance 'page
                                      :bounds bounds
                                      :header-top header-top
                                      :footer-bottom footer-bottom
@@ -165,7 +157,7 @@
       (funcall finalize-fn pdf:*page*))
     (when get-content
       (setf (pdf::content (pdf::content-stream pdf:*page*))
-             (get-output-stream-string pdf::*page-stream*))))
+	    (get-output-stream-string pdf::*page-stream*))))
   pdf:*page*)
 
 (defmethod draw-block (content x y dx dy 
@@ -190,60 +182,34 @@
         (funcall special-fn vbox 0 0))
       (stroke vbox 0 0))))
 
+(defun final-pass-p ()
+  (or (= *current-pass* *max-number-of-passes*)
+      (not (or *undefined-references* *changed-references*))))
+
 (defmacro with-document ((&rest args) &body body)
-  `(let* ((pdf:*document* (make-instance 'document ,@args))
-	  (pdf::*outlines-stack* (list (pdf::outline-root pdf:*document*)))
-	  (pdf::*root-page* (pdf::root-page pdf:*document*))
-          (pdf:*page* nil)
-          (pdf::*page-stream* (make-string-output-stream)))
-    (declare (dynamic-extent pdf::*page-stream*))
-    (with-standard-io-syntax
-      ,@body)))
+  `(let ((*reference-table* (make-hash-table :test #'equal))
+	 (*previous-reference-table* nil)
+	 (*undefined-references* t)
+	 (*changed-references* nil)
+	 (*contextual-variables* nil))
+    (loop for *current-pass* from 1 to *max-number-of-passes*
+          while (or *undefined-references* *changed-references*)
+	  do
+	  (setf *previous-reference-table* *reference-table*
+		*reference-table* (make-hash-table :test #'equal)
+		*undefined-references* nil
+		*changed-references* nil
+		*contextual-variables* nil)
+	  (pdf:with-document (,@args)
+	    (let ((pdf::*page-stream* (make-string-output-stream)))
+	      (declare (dynamic-extent pdf::*page-stream*))
+	      ,@body)))))
 
-#|
-(defun show-lines (lines)
-   (dolist (line lines)
-     (incf *line-number*)
-     (when (and *page-height* (zerop (mod *line-number* *page-height*)))
-       (restart-case (signal 'end-of-page)
-         ;; Continue on the next page after it has been feeded
-         (continue-with-next-page ())
-         ;; Continue on the next column after it has been feeded
-         (continue-with-next-column ())
- 	 ;; Limit ourselves with the representation that fits on this page
-         (truncate-output ())))))
-
-
-(defun draw-page (content &key (size *default-page-size*)
-                               (orientation *default-page-orientation*)
-                               bounds margins
-                               header (header-height (if header 12 0))
-                               footer (footer-height (if footer 12 0)))
- ;;; Args: content  Text or other content
-  ;;       header, footer 
-  ;;       margins
-  (with-quad (margin-left margin-top margin-right margin-bottom) margins
-    (let* ((bounds (or bounds (compute-page-bounds size)))
-           (width (aref bounds 2))
-           (height (aref bounds 3))
-           (x margin-left)
-           (y (- height margin-top))
-           (dx (- width margin-left margin-right))
-           (dy (- height margin-top margin-bottom)))
-      (pdf:with-page (:bounds bounds)
-       ;(pdf:with-outline-level ("Three arial samples" (pdf:register-page-reference))
-        (when header
-          (pdf:with-saved-state
-            (typeset::stroke (typeset:make-filled-vbox header dx header-height :top)
-                             x y)))
-        (typeset::stroke (typeset:make-filled-vbox content
-                                                   dx (- dy header-height footer-height)
-                                                   :top)
-                         x (- y header-height))
-        (when footer
-          (pdf:with-saved-state
-            (typeset::stroke (typeset:make-filled-vbox footer dx footer-height :top)
-                             x (- y header-height footer-height))))
-) ) ) )
- |#
-
+;(let* ((pdf:*document* (make-instance 'document ,@args))
+;	    (pdf::*outlines-stack* (list (pdf::outline-root pdf:*document*)))
+;	    (pdf::*root-page* (pdf::root-page pdf:*document*))
+;	    (pdf:*page* nil)
+;	    (pdf:*page-number* 0)
+;	    (pdf::*page-stream* (make-string-output-stream)))
+;       (with-standard-io-syntax
+;	   ,@body))

@@ -284,7 +284,7 @@
 (defun full-example (&optional (file #P"/tmp/ex.pdf")
 			       (banner-jpg #P"/tmp/banner.jpg")
 			       (fractal-jpg #P"/tmp/fractal.jpg"))
-  (pdf:with-document ()
+  (with-document ()
     (pdf:with-page ()
       (pdf:with-outline-level ("Table of Content" (pdf:register-page-reference))
 	(let ((content
@@ -305,17 +305,20 @@
 			     (hrule :dy 0.1 :color '(0.0 0 0.6))
 			     (paragraph (:h-align :fill :font "Helvetica" :font-size 14 :color '(0.0 0 0.4)
 						  :left-margin 25 :right-margin 25)
-					"Hello world" (dotted-hfill) "1" :eol
-					"Full demo" (dotted-hfill) "2" :eol
-					"cl-typegraph" (dotted-hfill) "3" :eol)
+					"Hello world" (dotted-hfill)
+					(format-string "~d" (find-ref-point-page-number "hello")) :eol
+					"Full demo" (dotted-hfill)
+					(format-string "~d" (find-ref-point-page-number "demo")) :eol
+					"cl-typegraph" (dotted-hfill)
+					(format-string "~d" (find-ref-point-page-number "graph")) :eol)
 			     (vspace 2)
-			     (hrule :dy 0.5 :color '(0.0 0 0.6))
-)))
+			     (hrule :dy 0.5 :color '(0.0 0 0.6)))))
 	  (draw-block content 20 800 545 700))))
     (pdf:with-page ()
       (pdf:with-outline-level ("Hello world" (pdf:register-page-reference))
 	(let ((content
 	       (compile-text ()
+	          (mark-ref-point "hello")
 		  (paragraph (:h-align :center :font "Helvetica-Bold" :font-size 30 :color '(0.0 0 0.8))
 			     "cl-typesetting" :eol
 			     (vspace 2)
@@ -334,6 +337,7 @@
       (pdf:with-outline-level ("Full demo" (pdf:register-page-reference))
 	(let ((content
 	       (compile-text ()
+	         (mark-ref-point "demo")
 		 (paragraph (:h-align :center :font "Helvetica-Bold" :font-size 30 :color '(0.0 0 0.8))
 			    "cl-typesetting" :eol
 			    (vspace 2)
@@ -468,6 +472,7 @@
       (pdf:with-outline-level ("cl-typegraph" (pdf:register-page-reference))
 	(let ((content
 	       (compile-text ()
+	          (mark-ref-point "graph")
 		  (paragraph (:h-align :center :font "Helvetica-Bold" :font-size 30 :color '(0.0 0 0.8))
 			     "cl-typegraph" :eol
 			     (vspace 2)
@@ -518,8 +523,7 @@
                         ;(hspace 100)
                         :hfill
                         (verbatim
-                         (format nil "Page ~d"
-                                 (1+ (position pdf:*page* (pages pdf:*document*))))))
+                         (format nil "Page ~d" pdf:*page-number*)))
                  ))))
     (setq content
           (compile-text ()

@@ -12,13 +12,16 @@
    #:paragraph 
    #:with-style #:set-style #:with-style
    #:table #:row #:cell
-   #:put-string #:verbatim
+   #:put-string #:format-string #:verbatim
    #:make-filled-vbox
    #:vspace #:hspace #:new-line #:new-page
    #:with-offset #:with-superscript #:with-subscript
    #:hrule #:image #:background-image
    #:display-formula #:fraction #:math-super-and-sub-script
-   #:vbox #:hbox #:colored-box #:user-drawn-box 
+   #:vbox #:hbox #:colored-box #:user-drawn-box
+   #:mark-ref-point #:find-ref-point #:find-ref-point-page-number #:find-ref-point-page-data
+   #:add-contextual-action #:set-contextual-variable #:push-contextual-variable
+   #:pop-contextual-variable #:get-contextual-variable
    ))
 
 

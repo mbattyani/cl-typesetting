@@ -241,6 +241,9 @@
 	      (t (add-box (make-char-box char))
 		 (add-box (make-inter-char-glue)))))))
 
+(defun format-string (&rest args)
+  (put-string (apply #'format nil args)))
+
 (defun new-line ()
   (add-box :eol))
 

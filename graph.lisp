@@ -130,7 +130,7 @@ edge [fontname=~a,fontsize=~a];
     (setf (x node) (* (pop values) 72.0)
 	  (y node) (* (pop values) 72.0))))
 
-(defun process-graph-edge-line (graph values)(print values)
+(defun process-graph-edge-line (graph values)
   (let* ((head (gethash (pop values) (nodes graph)))
 	 (tail (gethash (pop values) (nodes graph)))
 	 (edge (gethash (cons head tail) (edges graph)))

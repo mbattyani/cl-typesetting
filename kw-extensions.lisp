@@ -3,6 +3,7 @@
 
 (in-package typeset)
 
+;; these references are superseded by the ones in references.lisp
 ;; reference handling
 
 (defvar *ref-table* (make-hash-table :test #'equal))
@@ -17,7 +18,7 @@
    (y :accessor ref-y :initform nil)))
 
 (defmethod stroke ((mark ref-mark) x y)
-  (setf (ref-mark-page mark) (length (pages pdf:*document*))
+  (setf (ref-mark-page mark) pdf:*page-number*
 	(ref-x mark) x
 	(ref-y mark) y))
 
@@ -55,7 +56,7 @@
   (put-string (ref-value id)))
 
 (defun this-page-number ()
-  (length (pages pdf:*document*)))
+  pdf:*page-number*)
 
 (defun make-ref-page-mark (reftype value)
   (make-ref-mark (cons reftype (incf *ref-counter*)) value))

@@ -102,6 +102,11 @@
   (with-input-from-string (s lisp-string)
     (process-lisp-code s)))
 
+(defmethod process-lisp-code ((sexpr t))
+  (process-lisp-code
+   (with-output-to-string (s)
+     (pprint sexpr s))))
+
 (defun pprint-lisp-file (lisp-code pdf-file &optional title)
   (with-document ()
     (let* ((margins '(30 50 30 50))
@@ -125,8 +130,7 @@
                                 (verbatim print-stamp)
                                 :hfill
                                 (verbatim
-                                 (format nil "Page ~d"
-                                         (1+ (position pdf:*page* (pages pdf:*document*)))))))))
+                                 (format nil "Page ~d" pdf:*page-number*))))))
            (content (compile-text () (process-lisp-code lisp-code))))
       (draw-pages content :margins margins :header header :footer footer)
       (when pdf:*page* (finalize-page pdf:*page*))
