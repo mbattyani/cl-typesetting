@@ -1,4 +1,4 @@
-;;; cl-typesetting copyright 2002 Marc Battyani see license.txt for details of the license
+;;; cl-typesetting copyright 2003-2004 Marc Battyani see license.txt for details of the license
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
 
 (in-package typeset)
@@ -107,6 +107,7 @@
       (%use-style% font-size *font-size*)
       (%use-style% text-x-scale *text-x-scale*)
       (%use-style% color *color*)
+      (%use-style% background-color *background-color*)
       (%use-style% left-margin *left-margin*)
       (%use-style% right-margin *right-margin*)
       (%use-style% h-align *h-align*))
@@ -116,6 +117,7 @@
   (make-instance 'text-style :font (font style) :font-size (font-size style)
 		 :text-x-scale (text-x-scale style)
 		 :color (color style)
+		 :background-color (background-color style)
 		 :left-margin (left-margin style)
 		 :right-margin (right-margin style)
 		 :h-align (h-align style)))
@@ -265,9 +267,7 @@
 	    (*v-align* *default-v-align*)
 	    (*left-margin* *default-left-margin*)
 	    (*right-margin* *default-right-margin*))
-      (use-style (text-style ,the-content))
-      (prog1 (progn ,@body)
-	(unless ,dont-save-style (save-style (text-style ,the-content)))))))
+      (progn ,@body))))
 
 (defmacro compile-text ((&rest args) &body body)
   `(with-text-content ((make-instance 'text-content ,@args) :dont-save-style t)

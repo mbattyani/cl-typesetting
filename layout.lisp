@@ -1,4 +1,4 @@
-;;; cl-typesetting copyright 2003 Marc Battyani see license.txt for details of the license
+;;; cl-typesetting copyright 2003-2004 Marc Battyani see license.txt for details of the license
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
 
 (in-package typeset)
@@ -200,6 +200,10 @@
       (when lines
 	(let* ((box (make-instance 'vbox :dx dx :dy dy :boxes lines :fixed-size t)))
 	  (do-layout box)
+	  (when boxes-left
+	    (let ((last-style (make-instance 'text-style)))
+	      (save-style last-style)
+	      (push last-style boxes-left)))
 	  (setf (boxes content) boxes-left)
 	  box)))))
 
