@@ -216,8 +216,8 @@
 			    (with-style (:font "Times-Italic" :font-size 13)
 			      "The cool Common Lisp typesetting system"))
 		 (paragraph (:h-align :justified :top-margin 10 :first-line-indent 10
-				      :font "Times-Italic" :font-size 10)
-			      "This typesetting system's goal is to be an alternative to the TeX typesetting system. It is written in Common Lisp and uses cl-pdf as its backend. This will enable it to be powerful, extensible and fast. Though it is not considered very difficult, it is already better than Word...")
+				      :font "Times-Italic" :font-size 9)
+			      "This typesetting system's goal is to be an alternative to the TeX typesetting system. It is written in Common Lisp and uses cl-pdf as its backend. This enables it to be powerful, extensible, programmable  and fast. Though it is not considered very difficult, it is already much better than Word...")
 		 (paragraph (:h-align :centered :font "Helvetica-BoldOblique" :font-size 20 :color '(1.0 0 0))
 			    "Now in Color! "
 			    (colored-box :dx 15.0 :dy 15.0 :color "#FFC0C0" :border-width 0.5) " "
@@ -320,13 +320,11 @@
 			    (vspace 5)
 			    (with-style (:font "Times-Roman" :font-size 10)
 			      "This test now uses a TeX font (cmti10). Note the italic" :eol "correction for the super/subscript of the E."))
-		 (paragraph (:h-align :centered :top-margin 20 :font "Helvetica"
-				      :font-size 40 :color '(0.8 0 0))
-			    "Warning!" :eol
-			    (with-style (:font "Times-Italic" :font-size 14)
-			      "This test pdf file has been made with" :eol "cl-typesetting 0.67" :eol
+		 (paragraph (:h-align :centered :top-margin 20 :font "Times-Italic" :font-size 18 :color '(0.8 0 0))
+			      "This test pdf file has been typeset " :eol "with cl-typesetting 0.70" :eol
 			      (vspace 10)
-			      "Marc Battyani"))
+			      (with-style (:font "Times-Italic" :font-size 14)
+				"Marc Battyani"))
 		 :vfill
 		 (hrule :dy 20 :stroke-fn 'draw-wavelet-rule :color '(0.8 0 0))
 		 :vfill

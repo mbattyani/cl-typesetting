@@ -1,8 +1,19 @@
-;;; cl-typesetting copyright 2002 Marc Battyani see license.txt for details of the license
+;;; cl-typesetting copyright 2003-2004 Marc Battyani see license.txt for details of the license
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
 
-This is the change log for cl-typesetting. 
+This is the change log for cl-typesetting.
 See also contributors.txt and to-do.txt
+
+Current version:
+
+February 08 2004: Release 0.7
+  Added put-source-code-string to be able to insert text with no hyphenation, 
+        significant whitespaces and newlines so that source code is formatted correctly.
+  Added color-box
+  Added multipage example
+  Updated the example with a new cl-pdf code128 barcode
+  Exported the public symbols
+  A few fixes and some cleaning
 
 October 29 2003: Pre-Release 0.64
    Added contibutors.txt and to-do.txt
