@@ -16,14 +16,12 @@
 	       x (+ y (baseline box) (offset box))
 	       (dx box) (- (dy box)))))
 
-(defmethod stroke :after ((box box) x y)
-  (if (and (functionp *post-decoration*)
-	   (or (typep box 'char-box)
-	       (typep box 'white-char-box)))
-      (funcall *post-decoration*
-	       box
-	       x (+ y (baseline box) (offset box))
-	       (dx box) (- (dy box)))))
+(defmethod stroke :after ((box char-box) x y)
+  (when (functionp *post-decoration*)
+    (funcall *post-decoration*
+	     box
+	     x (+ y (baseline box) (offset box))
+	     (dx box) (- (dy box)))))
 
 
 (defmethod stroke ((hbox hbox) x y)

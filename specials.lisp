@@ -4,6 +4,11 @@
 
 (in-package typeset)
 
+#+clisp
+(setq custom:*floating-point-contagion-ansi* t
+      custom:*warn-on-floating-point-contagion* nil
+      custom:*default-file-encoding* (ext:encoding-charset "iso-8859-1"))
+
 (defconstant +huge-number+ (truncate most-positive-fixnum 10))
 (defconstant +epsilon+ 0.0001)
 

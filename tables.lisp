@@ -91,10 +91,19 @@
         when (> i 1)				; set all but last rows unsplittable
           do (setf (splittable-p row) nil)
         do
-        (loop for j = 0 then (+ j (col-span c))
+        #-clisp
+	(loop for j = 0 then (+ j (col-span c))
               and tail on (cells row)
               for c = (first tail)		; j is the column number of c
               while (< j col-number)
+              collect (first tail) into head
+              finally				; insert cell between head and tail
+              (setf (cells row) (nconc head (list cell) tail)))
+        #+clisp
+	(loop for j = 0 then (+ j (col-span c))
+              for tail = (cells row) then (cdr tail)
+              for c = (first tail)		; j is the column number of c
+              while (and tail (< j col-number))
               collect (first tail) into head
               finally				; insert cell between head and tail
               (setf (cells row) (nconc head (list cell) tail)))
@@ -131,7 +140,8 @@
                                 :end (1- (length row-span))
                                 :initial-value (* (1- (length row-span))
                                                   full-size-offset)))  into max-height
-          finally (setf height (+ (max (or (height row) 0) max-height) +epsilon+)))
+          finally (setf height (+ (max (or (height row) 0)
+				       #-clisp max-height #+clisp (or max-height 0)) +epsilon+)))
     (setf (height row) height)
     (loop for cell in (cells row)
           for row-span = (row-span cell)
@@ -188,13 +198,22 @@
           ;do (setf (dy row) (+ (height row) full-size-offset))
           do (push row boxes)
           finally
+	  #+clisp (unless (> y max-height) (pop rows))
           (when (and boxes
                      ;; Trim unsplitalbe rows and reverse the list of accumulated boxes
-                     (setf boxes (loop for tail on boxes
-                                       for row = (first tail)
-                                       until (splittable-p row)
-                                       do (decf prev-y (+ (height row) full-size-offset))
-                                       finally (return (nreverse tail)))))
+                     (setf boxes
+			   #-clisp
+			   (loop for tail on boxes
+				 for row = (first tail)
+				 until (splittable-p row)
+				 do (decf prev-y (+ (height row) full-size-offset))
+				 finally (return (nreverse tail)))
+			   #+clisp
+			   (loop for tail = boxes then (cdr tail)
+				 for row = (first tail)
+				 until (or (not row) (splittable-p row))
+				 do (decf prev-y (+ (height row) full-size-offset))
+				 finally (return (nreverse tail)))))
             (setq boxes (append header boxes footer))
             (let ((first (first boxes))
                   (last (first (last boxes))))
@@ -203,8 +222,7 @@
             (setf rows-left rows)			; reduce rows to output
             (decf (slot-value table 'dy) prev-y)	; and space required by table
             (return (values boxes rows (- max-height prev-y))))
-          (return (values nil rows-left dy))
-) ) )
+          (return (values nil rows-left dy)))))
 
 (defmethod dy :around ((table multi-page-table))
   (with-slots (header footer) table

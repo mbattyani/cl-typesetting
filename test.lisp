@@ -128,7 +128,7 @@
       (pdf:set-color-stroke (color box))
       (pdf:move-to (- dx/2) 0)
       (loop for x from (- dx/2) by 0.2
-	    for y = (* dy/2 (cos (* x 0.8)) (exp (* x x -0.006)))
+	    for y = (* dy/2 (cos (* x 0.8)) (exp (* x x -0.006d0)))
 	    while (< x dx/2)
 	    do (pdf:line-to x y))
       (pdf:stroke))))
