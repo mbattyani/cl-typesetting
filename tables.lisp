@@ -41,7 +41,7 @@
    (header&footer-height :accessor header&footer-height :initform 0)
    ))
 
-(defclass splitted-table (box v-mode-mixin)
+(defclass split-table (box v-mode-mixin)
   ((original-table :accessor original-table :initform nil :initarg :original-table)
    (rows :accessor rows :initform nil :initarg :rows)))
 
@@ -176,7 +176,7 @@
 		       +epsilon+))))
 
 (defmethod v-split ((table table) dx dy)
-  "Factor out rows that fit and return a splitted table + the table."
+  "Factor out rows that fit and return a split table + the table."
   ;; Treat unsplittable rows as a single unit - for this purpose,
   ;; group the rows list into the following form:
   ;;
@@ -217,7 +217,7 @@
 		(setf (rows table) rows-remaining)
 		;; reduce space required by table (don't subtract header/footer)
 		(decf (dy table) current-height)
-		(return (values (make-instance 'splitted-table :rows (nreverse fitted-rows)
+		(return (values (make-instance 'split-table :rows (nreverse fitted-rows)
 					       :original-table table
 					       :dx (dx table)
 					       :dy (+ current-height header&footer-height))
@@ -267,7 +267,7 @@
                             (pdf:stroke)))
                         (stroke (box cell) cell-offset (- cell-offset)))))))
 
-(defmethod stroke ((table splitted-table) x y)
+(defmethod stroke ((table split-table) x y)
   (stroke-table (original-table table) x y (rows table) (dy table)))
 
 (defmethod stroke ((table table) x y)

@@ -41,12 +41,6 @@
 (defclass v-mode-mixin ()
   ())
 
-(defmethod v-splittable-p (box max-dy)
-  nil)
-
-(defmethod h-splittable-p (box max-dx)
-  nil)
-
 (defclass elasticity ()
   ((delta-size :accessor delta-size :initform 0)
    (max-expansion :accessor max-expansion :initform 0 :initarg :max-expansion)
@@ -180,8 +174,8 @@
  ;;; Split a v-mode box vertically into two parts
   ;; Args: dx - area width, dy - area height
   ;; Values: box-fitted, box-left, dy-left
- (:method (content dx dy &optional v-align)
-  (declare (ignore dx v-align))
+ (:method (v-box dx dy)
+  (declare (ignore dx))
   (if (> (dy box) dy)
       (values nil box dy)
       (values box nil (- dy (dy box))))))
