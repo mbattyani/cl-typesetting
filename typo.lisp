@@ -149,7 +149,7 @@
 
 (defun make-white-char-box (char &optional (trimmable-p t))
   (let ((width (* (pdf:get-char-width char *font* *font-size*) *text-x-scale*)))
-    (make-instance 'white-char-box :trimmable-p trimmable-p
+    (make-instance 'white-char-box :trimmable-p trimmable-p :dy *leading* :baseline *font-size*
 		   :dx width :max-expansion (* width 10) :max-compression (* width 0.7)
 		   :expansibility (* width 2.0) :compressibility width)))
 

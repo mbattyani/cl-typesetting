@@ -36,8 +36,8 @@
    (padding :accessor padding :initform 1 :initarg :padding)
    (cell-padding :accessor cell-padding :initform 1 :initarg :cell-padding)
    (rows :accessor rows :initform ())
-   (header :accessor header :initarg :header :initform nil) ; rows printed on each page
-   (footer :accessor footer :initarg :footer :initform nil) ; rows printed on each page
+   (header :accessor header :initform nil) ; rows printed on each page
+   (footer :accessor footer :initform nil) ; rows printed on each page
    (header&footer-height :accessor header&footer-height :initform 0)
    ))
 
@@ -279,21 +279,17 @@
                        (padding 5) (cell-padding 2)
                        (border 1) (border-color #x00000) 
 		       background-color
-                       header footer
-                       (splittable-p (and (or header footer) t)))
+                       splittable-p)
 		 &body body)
-  (with-gensyms (hbox)
-    `(let* ((*table* (make-instance 'table :splittable-p ,splittable-p
-                                    ,@(when header `((:header ,header)))
-                                    ,@(when footer `((:footer ,footer)))
-                                    :col-widths ,col-widths
-                                    :padding ,padding :cell-padding ,cell-padding
-                                    :background-color ,background-color
-				    :border ,border :border-color ,border-color)))
-      (add-box *table*)
-      ,@body
-      (compute-table-size *table*)
-      *table*)))
+  `(let* ((*table* (make-instance 'table :splittable-p ,splittable-p
+				  :col-widths ,col-widths
+				  :padding ,padding :cell-padding ,cell-padding
+				  :background-color ,background-color
+				  :border ,border :border-color ,border-color)))
+    (add-box *table*)
+    ,@body
+    (compute-table-size *table*)
+    *table*))
 
 (defmacro header-row ((&rest args) &body body)
   `(let* ((*table-row* (make-instance 'table-row :splittable-p nil ,@args)))

@@ -31,6 +31,7 @@
 		 (:file "stroke" :depends-on ("layout"))
 		 (:file "top-level" :depends-on ("stroke" "typo"))
 		 (:file "test" :depends-on ("top-level" "tables" "math"))
+		 (:file "pprint" :depends-on ("top-level"))
 		 )
     :depends-on (:cl-pdf))
 

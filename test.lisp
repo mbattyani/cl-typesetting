@@ -322,10 +322,13 @@
 			     (hrule :dy 1)
 			     (with-style (:font "Times-Italic" :font-size 24)
 			       "The Cool Common Lisp Typesetting System")
-			     (vspace 50)
-			     (with-style (:font "Helvetica-Oblique" :font-size 100)
+;			     (vspace 50)
+;			     (with-style (:font "Helvetica-Oblique" :font-size 100)
+;			       "Hello World!")
+			     :vfill
+			     (with-style (:font "Times-Italic" :font-size 100)
 			       "Hello World!")
-			     (vspace 50)))))
+			     :vfill))))
 	  (draw-block content 20 800 545 700))))
    (pdf:with-page ()
       (pdf:with-outline-level ("Full demo" (pdf:register-page-reference))
@@ -474,17 +477,19 @@
 		  (vspace 20)
 		  (paragraph (:h-align :justified :top-margin 10 :first-line-indent 10
 				       :font "helvetica" :font-size 12)
-			     "cl-typegraph is a cl-typesetting extension to typeset graphs. It uses GraphViz for the graph layout and then draws it with cl-pdf and cl-typesetting. See some examples below:")
+			     "cl-typegraph is a cl-typesetting extension to typeset graphs. It uses GraphViz for the graph layout and then draws it with cl-pdf and cl-typesetting. The nodes can contain strings or a full cl-typesetting layout." :eol
+			     (vspace 20)
+			     "In the first graph example below, the nodes contain only strings.")
 		  (vspace 20)
-		  :hfill (graph-box (gen-simple-graph)) :hfill
-		  (paragraph (:h-align :center :font "Times-Italic" :font-size 10)
-			     "The class hierarchy for the boxes in cl-typeseting.")
+		  :hfill (graph-box (gen-box-graph)) :hfill
+		  (paragraph (:h-align :center :font "Times-Italic" :font-size 11)
+			     "The class hierarchy for the boxes in cl-typesetting.")
 		  (vspace 20)
 		  (paragraph (:h-align :justified :font "helvetica" :font-size 12)
-			     "In the graph below, each node contains a full cl-typesetting layout. All the cl-typesetting features can be used in a node even another graph.")
+			     "In the next graph, each node contains a full cl-typesetting layout. All the cl-typesetting features can be used in a node, even another graph.")
 		  (vspace 20)
 		  :hfill (graph-box (gen-color-graph)) :hfill
-		  (paragraph (:h-align :center :font "Times-Italic" :font-size 10)
+		  (paragraph (:h-align :center :font "Times-Italic" :font-size 11)
 			     "The primary colors"))))
 	  (draw-block content 30 810 530 780))))
     (pdf:write-document file)))
