@@ -2,7 +2,9 @@
 I'd like to thank the following individuals for their contributions to cl-typesetting:
 
 David J Cooper Jr (ACL compatibility, text-x-scale)
+Manuel Giraud (enumerate)
 Fabrice Popineau (TeX hyphenation algorithm)
+Peter Seibel (Tests)
 Klaus Weidner (CMUCL compatibility)
 
 I apologize if I've missed someone. Please let me know if that's the case.

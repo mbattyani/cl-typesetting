@@ -353,3 +353,16 @@
 				   :boxes (rest (boxes *content*)))))
       (align-baseline ,hbox ,align)
       (add-box ,hbox))))
+
+(defvar %enumerate-indents% nil)
+
+(defmacro enumerate ((&key (indent 20) (item-fmt "~D. "))
+                     &body body)
+  `(let ((%enumerate-indents% (cons ,indent %enumerate-indents%)))
+    ,@(loop for item in body
+            for i from 1 collect
+            `(paragraph (:left-margin (reduce #'+ %enumerate-indents%)
+                         :first-line-indent (- 4)
+                         ,@(cadr item))
+              ,(format nil item-fmt i)
+              ,@(cddr item)))))

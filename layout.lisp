@@ -36,6 +36,7 @@
 	 (last-cut-point nil)
 	 (last-cut-boxes-left ())
 	 (trimming t)
+	 (last-style (make-instance 'text-style))
 	 (x 0)
 	 (next-x 0)
 	 (last-x dx))
@@ -44,11 +45,13 @@
     (labels ((return-lines ()
 	       (when (member v-align '(:centered :top))
 		 (push (make-vfill-glue) text-lines))
-	       (return-from split-lines (values (nreverse text-lines) boxes-left)))
+	       (return-from split-lines (values (nreverse text-lines)
+						(when boxes-left (cons last-style boxes-left)))))
 	     (abort-line ()
 	       (setf boxes-left boxes)
 	       (return-lines))
 	     (init-line ()
+	       (save-style last-style)
 	       (setf line-boxes nil last-cut-point nil last-cut-boxes-left nil
 		     trimming t next-x 0 last-x (- dx *right-margin*)))
 	     (start-line ()
@@ -200,10 +203,6 @@
       (when lines
 	(let* ((box (make-instance 'vbox :dx dx :dy dy :boxes lines :fixed-size t)))
 	  (do-layout box)
-	  (when boxes-left
-	    (let ((last-style (make-instance 'text-style)))
-	      (save-style last-style)
-	      (push last-style boxes-left)))
 	  (setf (boxes content) boxes-left)
 	  box)))))
 
