@@ -50,6 +50,11 @@
     (setf (boxes-tail content) (setf (cdr (boxes-tail content)) (list box))))
   box)
 
+(defun add-boxes-to-content (content boxes)
+  (when content
+    (setf (boxes-tail content) (setf (cdr (boxes-tail content)) boxes)))
+  boxes)
+
 (defun clear-content (content)
   (setf (boxes content)(list :start))
   (setf (boxes-tail content)(boxes content)))
@@ -199,6 +204,12 @@
 (defun add-box (box)
   (when box
     (add-box-to-content *content* box)))
+
+(defun add-content (content)
+  (when content
+    (add-boxes-to-content *content* (cdr (boxes content)))
+    (clear-content content))
+  content)
 
 (defun punctuation-mark-p (char)
   (find char *punctuation-marks*))

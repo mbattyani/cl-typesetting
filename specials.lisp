@@ -4,7 +4,12 @@
 
 (in-package typeset)
 
-#+clisp
+#+(and clisp win32)
+(setq custom:*floating-point-contagion-ansi* t
+      custom:*warn-on-floating-point-contagion* nil
+      custom:*default-file-encoding* (ext:encoding-charset charset:iso-8859-1))
+
+#+(and clisp (not win32))
 (setq custom:*floating-point-contagion-ansi* t
       custom:*warn-on-floating-point-contagion* nil
       custom:*default-file-encoding* (ext:encoding-charset "iso-8859-1"))

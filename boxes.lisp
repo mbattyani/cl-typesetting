@@ -166,11 +166,11 @@
 (defmethod adjust-box-dy (box dy baseline)
   nil)
 
-(defgeneric v-split ((box v-mode-mixin) dx dy)
+(defgeneric v-split (box dx dy)
  ;;; Split a v-mode box vertically into two parts
   ;; Args: dx - area width, dy - area height
   ;; Values: box-fitted, box-left, dy-left
- (:method (box dx dy)
+ (:method ((box v-mode-mixin) dx dy)
   (declare (ignore dx))
   (if (> (dy box) dy)
       (values nil box dy)

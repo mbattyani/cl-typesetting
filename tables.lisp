@@ -18,7 +18,13 @@
    (v-align :accessor v-align :initform :top :initarg :v-align)
    (background-color :accessor background-color :initform nil :initarg :background-color)
    (col-span :accessor col-span :initform 1 :initarg :col-span)
-   (row-span :accessor row-span :initform 1 :initarg :row-span)))
+   (row-span :accessor row-span :initform 1 :initarg :row-span)
+   ;; Quad specifying the border to be drawn between table border and cell padding;
+   ;; Borders of a cell count for its external height (unless it is limited by the height
+   ;; of the containing row) and tighten the width of its content box.
+   ;; Hence, they participate in the calculation of total row or table height,
+   ;; but do not increase column width.
+   (border :accessor border :initform nil :initarg :border)))
 
 (defclass table-row ()
   ((height :accessor height :initform nil :initarg :height)
@@ -100,6 +106,17 @@
 	  and cell-height = 0.0
           for col-span = (1- (col-span cell))
           and row-span = (row-span cell)
+          and cell-border = (border cell)
+          for cell-borders-width 
+              = (cond ((null cell-border) 0)
+                      ((numberp cell-border) (+ cell-border cell-border))
+                      ((with-quad (left-border nil right-border) cell-border
+                         (+ left-border right-border))))
+          and cell-borders-height
+              = #1=(cond ((null cell-border) 0)
+                         ((numberp cell-border) (+ cell-border cell-border))
+                         ((with-quad (left-border top-border nil bottom-border) cell-border
+                            (+ top-border bottom-border))))
 	  unless width do (error "Too many cells in this row")
 	  ;; Adjust cell width for cells spanning multiple columns
           unless (zerop col-span)
@@ -109,7 +126,9 @@
 
           ;; Fill cell with content if required
           when (cell-start-row-p cell row)
-            do (setf (box cell) (make-filled-vbox (content cell) width height (v-align cell))
+            do (setf (box cell) (make-filled-vbox (content cell)
+                                                  (- width cell-borders-width)
+                                                  height (v-align cell))
                      (width cell) width)
 	    
           ;; A cell spanning several rows participates only in height calculation 
@@ -118,14 +137,15 @@
           do (span-cell rows cell col-number)
           else unless (height row)
             if (eql row-span 1)
-            do (setq cell-height
-		     (compute-boxes-natural-size (boxes (box cell)) #'dy))
+            do (setq cell-height (+ (compute-boxes-natural-size (boxes (box cell)) #'dy)
+                                    cell-borders-height))
             else if (cell-end-row-p cell row)
 	    do (setq cell-height
-		     (- (compute-boxes-natural-size (boxes (box cell)) #'dy)
+		     (- (+ (compute-boxes-natural-size (boxes (box cell)) #'dy)
+                           cell-borders-height)
 			(reduce #'+ row-span
 				:key #'height
-			:end (1- (length row-span))
+                                :end (1- (length row-span))
 				:initial-value (* (1- (length row-span))
 						  full-size-offset))))
 
@@ -135,16 +155,18 @@
     (setf (height row) height)
     (loop for cell in (cells row)
           for row-span = (row-span cell)
+          and cell-border = (border cell)
+          for cell-borders-height = #1#
           if (eql row-span 1)
           do (setf (height cell) height
-                   (dy (box cell)) height)
+                   (dy (box cell)) (- height cell-borders-height))
              (do-layout (box cell))
           else if (cell-end-row-p cell row)
           do (let ((height (reduce #'+ row-span :key #'height
                                    :initial-value (* (1- (length row-span))
                                                      full-size-offset))))
                (setf (height cell) height
-                     (dy (box cell)) height)
+                     (dy (box cell)) (- height cell-borders-height))
                (do-layout (box cell))))
     height))
 
@@ -188,14 +210,14 @@
       (with-slots (header footer border padding cell-padding) table ;(print (rows table))
 	(loop with fitted-rows = ()
 	      with header&footer-height = (header&footer-height table)
-	      with padding&border = (+ (* 2 cell-padding) border)
+	      with full-size-offset = (+ (* 2 cell-padding) border)
 	      with current-height = (+ border padding)
 	      with available-height = (- dy header&footer-height)
 	      with row-groups = (loop with height = 0
 				      and  rows = ()
 				      for row in (rows table)
 				      do
-				      (incf height (+ (height row) padding&border))
+				      (incf height (+ (height row) full-size-offset))
 				      (push row rows)
 				      when (splittable-p row)
 				      collect (cons height (nreverse rows))
@@ -212,7 +234,7 @@
 	      
 	      finally
 	      (when fitted-rows
-		(setq boxes (append header  footer))
+		;(setq boxes (append header  footer)) ; DI 2004-Sep-21: not needed any longer
 		;; reduce rows to output
 		(setf (rows table) rows-remaining)
 		;; reduce space required by table (don't subtract header/footer)
@@ -226,9 +248,29 @@
 	      (return (values nil table dy))))
       (values nil table dy)))
 
+(defun multi-line (points widths)
+ ;;; Helper akin to polyline, but skips zero-width lines
+  ;; Args: points - list of dotted(!) pairs.
+  (do ((prev-x (caar points))
+       (prev-y (cdar points))
+       (other-points (rest points) (rest other-points)))
+      ((null (and other-points widths)))
+    (let ((width (pop widths))
+          (x (caar other-points))
+          (y (cdar other-points)))
+      (if (zerop width)
+          (setq prev-x x prev-y y)
+          (progn 
+            (pdf:set-line-width width)
+            (when prev-x (pdf:move-to prev-x prev-y))
+            (pdf:line-to x y)
+            (setq prev-x nil prev-y nil))))))
+
 (defun stroke-table (table x y rows dy)
   (let* ((padding (padding table))
-         (border (border table)))
+         (border (border table))
+         (half-border (/ border 2))			; for more careful drawing
+         (*table* table))
     (when (background-color table)
       (pdf:with-saved-state
         (pdf:set-color-fill (background-color table))
@@ -240,32 +282,70 @@
                             (- (* 2 (+ padding border)) dy)))
         (pdf:fill-path)))
     (loop with cell-padding = (cell-padding table)
-          with cell-offset = (+ cell-padding border)
-          with full-size-offset = (+ cell-offset cell-padding)
+          with full-size-offset = (+ cell-padding cell-padding border)
           for row in (append (header table) rows (footer table))
           for row-y = (- y padding border) then (- row-y height full-size-offset)
           and height = (height row)
+          and *table-row* = row
           do (loop for cell-x = (+ x padding border) then (+ cell-x width full-size-offset)
                    for cell in (cells row)
                    for width = (width cell)
                    for height = (height cell)
+                   and cell-border = (border cell)
+                   and cell-offset-x = cell-padding
+                   and cell-offset-y = cell-padding
                    when (cell-start-row-p cell row)
                    do (pdf:with-saved-state
+	                ;; Set translation while counting both table border and padding,
+                        ;; but neither cell-border nor cell-padding.
                         (pdf:translate cell-x row-y)
-                        (pdf:with-saved-state
-                          (when (or (background-color cell)(background-color row))
-                            (pdf:set-color-fill (or (background-color cell)
-                                                    (background-color row)))
-                            (pdf:basic-rect 0 0 (+ width full-size-offset)
-                                            (- (+ height full-size-offset)))
-                            (pdf:fill-path))
-                          (unless (zerop border)
-                            (pdf:set-line-width (border table))
+                        (pdf:with-saved-state		; first, fill background
+                          (let ((background-color (or (background-color cell)
+                                                      (background-color row))))
+                            (when background-color
+                              (pdf:set-color-fill background-color)
+                              (pdf:basic-rect (- half-border) half-border ;0 0
+                                              (+ width full-size-offset)
+                                              (- (+ height full-size-offset)))
+                              (pdf:fill-path)))
+                          (unless (zerop border)	; next, draw table border
+                            (pdf:set-line-width border)
                             (pdf:set-gray-stroke 0)
-                            (pdf:basic-rect 0 0 (+ width full-size-offset)
+                            (pdf:basic-rect (- half-border) half-border ;0 0
+                                            (+ width full-size-offset)
                                             (- (+ height full-size-offset)))
+                            (pdf:stroke))
+                          (when cell-border		; last, draw cell border
+                            (pdf:set-gray-stroke 0)
+                            (with-quad (left-border top-border right-border bottom-border)
+                                cell-border
+                              (if (or (numberp cell-border)
+                                      (= left-border top-border right-border bottom-border))
+                                  (unless (zerop left-border)
+                                    (pdf:set-line-width left-border)
+                                    (let ((half-border (/ left-border 2)))
+                                      (pdf:basic-rect half-border (- half-border)
+                                            (- (+ width full-size-offset) left-border)
+                                            (- left-border height full-size-offset))
+                                      (incf cell-offset-x left-border)
+                                      (incf cell-offset-y left-border)))
+                                  (let* ((left (/ left-border 2))
+                                         (top (- (/ top-border 2)))
+                                         (right (- (+ width full-size-offset)
+                                                   left (/ right-border 2)))
+                                         (bottom (- (/ bottom-border 2) top
+                                                    height full-size-offset)))
+                                    (multi-line `((,left  . ,bottom)
+                                                  (,left  . ,top)
+                                                  (,right . ,top)
+                                                  (,right . ,bottom)
+                                                  (,left  . ,bottom))
+                                                `(,left-border ,top-border
+                                                  ,right-border ,bottom-border))
+                                    (incf cell-offset-x left-border)
+                                    (incf cell-offset-y top-border))))
                             (pdf:stroke)))
-                        (stroke (box cell) cell-offset (- cell-offset)))))))
+                        (stroke (box cell) cell-offset-x (- cell-offset-y)))))))
 
 (defmethod stroke ((table split-table) x y)
   (stroke-table (original-table table) x y (rows table) (dy table)))
@@ -313,47 +393,70 @@
   `(add-table-cell (make-instance 'table-cell :content (compile-text () ,@body) ,@args)))
 
 #|
-;(let ((pdf:*page*(setq content
-(defun make-test-table (&optional (inline t) (splittable-p nil) (border 1/2))
-  (typeset:table (:col-widths '(20 40 60 80 120)
-                  :background-color :yellow :border border
-                  :inline inline :splittable-p splittable-p)
-    (typeset::row (:background-color :green)
-      (typeset:cell (:row-span 2 :background-color :blue)
-                    "1,1 2,1  row-span 2")
-      (typeset:cell () "1,2")
-      (typeset:cell (:col-span 2 :row-span 3 :background-color :red)
-                    "1,3 1,4 - 3,3 3,4  col-span 2 row-span 3")
-      (typeset:cell () "1,5"))
-    (typeset::row ()
-      (typeset:cell () "2,2")
-      (typeset:cell (:row-span 2 :background-color :blue) "2,5 3,5  row-span 2"))
-    (typeset::row (:background-color :green)
-      (typeset:cell (:col-span 2) "3,1 3,2  col-span 2"))
-    (typeset::row ()
-      (typeset:cell () "4,1")
-      (typeset:cell () "4,2")
-      (typeset:cell () "4,3")
-      (typeset:cell () "4,4")
-      (typeset:cell () "4,5"))
-) )
+(defun test-table (&optional (file (lw:current-pathname "test-table.pdf"))
+                   &aux content table (margins '(72 72 72 50)))
+  (let* ((tt:*default-font* (pdf:get-font "Helvetica"))
+         (tt:*default-font-size* 10))
+   (with-document ()
+    (setq content (compile-text (:font tt:*default-font* :font-size tt:*default-font-size*)
+     (tt:paragraph () "Test table spans and borders")
+           ;; Various spans
+     (tt:table (:col-widths '(20 40 60 80 120) :background-color :yellow :border 1)
+       (tt:header-row ()
+         (tt:cell (:col-span 5)
+           (tt:paragraph (:h-align :centered :font-size 12)
+             "Table with cells spanning more then one row or column")))
+       (tt:row (:background-color :green)
+         (tt:cell (:row-span 2 :background-color :blue)
+           "1,1 2,1  row-span 2")
+         (tt:cell () "1,2")
+         (tt:cell (:col-span 2 :row-span 3 :background-color :red)
+           "1,3 1,4 - 3,3 3,4  col-span 2 row-span 3")
+         (tt:cell () "1,5"))
+       (tt::row ()
+         (tt:cell () "2,2")
+         (tt:cell (:row-span 2 :background-color :blue) "2,5 3,5  row-span 2"))
+       (tt:row (:background-color :green)
+         (tt:cell (:col-span 2) "3,1 3,2  col-span 2"))
+       (tt::row ()
+         (tt:cell () "4,1")
+         (tt:cell () "4,2")
+         (tt:cell () "4,3")
+         (tt:cell () "4,4")
+         (tt:cell () "4,5")))
+    (setq table
+     (tt:table (:col-widths '(50 40 60 80 120) :border 0)
+       (tt:header-row ()
+         (tt:cell (:col-span 5 :border 1)
+           (tt:paragraph (:h-align :centered :font-size 12)
+             "Cells with borders")))
+       (tt:row (:background-color :green)
+         (tt:cell (:row-span 2 :background-color :blue)
+           "1,1 2,1  row-span 2")
+         (tt:cell () "1,2")
+         (tt:cell (:col-span 2 :row-span 3 :background-color :red)
+           "1,3 1,4 - 3,3 3,4  col-span 2 row-span 3")
+         (tt:cell () "1,5"))
+       (tt:row ()
+         (tt:cell (:border 2) "2,2")
+         (tt:cell (:row-span 2 :background-color :blue) "2,5 3,5  row-span 2"))
+       (tt:row (:background-color :green)
+         (tt:cell (:col-span 2 :border 2) "3,1 3,2  col-span 2"))
+       (tt:row ()
+         (tt:cell (:border #(3 0 0 0)) "4,1 left-border 3")
+         (tt:cell (:border #(0 3 0 0)) "4,2 top-border 3")
+         (tt:cell (:border #(2 2 2 2)) "4,3 border #(2 2 2 2)")
+         (tt:cell (:border #(0 0 3 0)) "4,4 right-border 3")
+         (tt:cell (:border #(0 0 0 3)) "4,5 bottom-border 3"))
+       (tt:row ()
+         (tt:cell (:col-span 5 :border '(0 1/4))
+           (tt:paragraph (:h-align :justified :font-size 12)
+             "bottom" :hfill "cell" :hfill "spanning" :hfill "several" :hfill "rows"))))
+    )))
+    (draw-pages content :margins margins :break :after)
+    (pdf:write-document file)))
+ table)
 
-(defun test-table (table
-                   &optional (file (lw:current-pathname "../examples/test-table.pdf"))
-                   &aux (margins '(72 72 72 50)))
-  (with-document ()
-    (let ((content (compile-text ()
-                     (setq table (make-test-table t nil))
-                     (make-test-table t nil 0)
-                     (vspace 280)
-                     ;(setq table (make-test-table t t 0))
-                     ;(add-box (make-test-table t t))
-                  )))
-      (draw-pages content :margins margins)); :header header :footer footer) ;:break :after
-    (draw-pages (setq table (make-test-table t t 1)) :margins margins)
-    (when pdf:*page* (typeset::finalize-page pdf:*page*))
-    (pdf:write-document file))
-  table)
-
-(setq table (test-table nil))
+(pdf:load-fonts)
+(setq table (test-table (lw:current-pathname "examples/test-table.pdf")))
  |#

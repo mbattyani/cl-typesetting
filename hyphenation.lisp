@@ -4,12 +4,15 @@
 (in-package typeset)
 
 (defun hyphenate-string (string)
-(when (> (length string) 4)
-  (loop with hyphen-points
-        for start = 0 then (position-if #'alpha-char-p string :start (1+ end))
-        for end = (when start (position-if-not #'alpha-char-p string :start (1+ start)))
-        while end
-        when (> (- end start) 4)
-        nconc (mapcar #'(lambda (n) (+ start n))
-		      (nix::hyphen-find-hyphen-points
-		       nix::*american-hyphen-trie* (subseq string start end))))))
+  (let ((min-word-size (+ nix::*left-hyphen-minimum* nix::*right-hyphen-minimum*)))
+    (when (>= (length string) min-word-size)
+      (loop
+	  for prev-word-end = 0 then word-end
+	  for word-start = (position-if #'alpha-char-p string :start prev-word-end)
+	  for word-end = (when word-start (position-if-not #'alpha-char-p string :start word-start))
+	  while word-end
+	  when (>= (- word-end word-start) min-word-size)
+	  nconc (mapcar #'(lambda (n) (+ word-start n))
+			(nix::hyphen-find-hyphen-points
+			 nix::*american-hyphen-trie* (subseq string word-start word-end)))))))
+

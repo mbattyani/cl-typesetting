@@ -68,7 +68,6 @@
    (let* ((bounds (or bounds (compute-page-bounds size orientation)))
           (height (aref bounds 3)))
     (flet ((add-page ()
-	     (incf pdf:*page-number*)
              (setq pdf:*page* (apply #'make-instance 'page
                                      :bounds bounds
                                      :header-top header-top
@@ -200,7 +199,7 @@
 	  (pdf:with-document (,@args)
 	    (let ((pdf::*page-stream* (make-string-output-stream)))
 	      (declare (dynamic-extent pdf::*page-stream*))
-	      ,@body)))))
+		,@body)))))
 
 (defun write-document (filename &optional (document pdf:*document*))
   (when (final-pass-p)

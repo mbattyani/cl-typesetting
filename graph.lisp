@@ -25,6 +25,7 @@
 (defclass graph-node ()
   ((id :accessor id :initform (make-graph-node-id))
    (data :accessor data :initarg :data :initform nil)
+   (dot-attributes :accessor dot-attributes :initarg :dot-attributes :initform nil)
    (background-color :accessor background-color :initarg :background-color :initform '(1.0 1.0 1.0))
    (border-color :accessor border-color :initarg :border-color :initform '(0.0 0.0 0.0))
    (border-width :accessor border-width :initarg :border-width :initform 1)
@@ -38,7 +39,9 @@
   ((label :accessor label :initarg :label :initform nil)
    (head :accessor head :initarg :head)
    (tail :accessor tail :initarg :tail)
+   (direction :accessor direction :initarg :direction :initform :forward)
    (data :accessor data :initarg :data :initform nil)
+   (dot-attributes :accessor dot-attributes :initarg :dot-attributes :initform nil)
    (color :accessor color :initarg :color :initform '(0.0 0.0 0.0))
    (width :accessor width :initarg :width :initform 1)
    (label-color :accessor label-color :initarg :color :initform '(0.0 0.0 0.0))
@@ -52,6 +55,7 @@
   ((nodes :accessor nodes :initform (make-hash-table :test #'equal))
    (edges :accessor edges :initform (make-hash-table :test #'equal))
    (dot-attributes :accessor dot-attributes :initarg :dot-attributes :initform nil)
+   (rank-constraints :accessor rank-constraints :initform nil)
    (background-color :accessor background-color :initarg :background-color :initform '(1.0 1.0 1.0))
    (border-color :accessor border-color :initarg :border-color :initform '(0.0 0.0 0.0))
    (border-width :accessor border-width :initarg :border-width :initform 1)
@@ -77,6 +81,9 @@
 (defun add-edge (graph edge)
   (setf (gethash (cons (head edge)(tail edge)) (edges graph)) edge))
 
+(defun add-rank-constraint (graph constraint nodes)
+  (push (cons constraint nodes) (rank-constraints graph)))
+
 (defmethod adjust-graph-node-size ((node graph-node) data fixed-width fixed-height)
   (unless fixed-width
     (setf (dx node) (+ (pdf::text-width (format nil "~a" data) *node-label-font* *node-label-font-size*) 4)))
@@ -87,6 +94,15 @@
   (unless fixed-height
     (setf (dy node) (+ (compute-boxes-natural-size (boxes box) #'dy) 4))))
 
+(defun gen-dot-attributes (s attributes &optional comma)
+  (loop for (attribute value) in attributes do
+	(if comma
+	    (write-string ", " s)
+	    (setf comma t))
+	(write-string attribute s)
+	(write-char #\= s)
+	(write-line value s)))
+
 (defmethod gen-graph-dot-data ((graph graph) s)
   (format s "digraph G {
 size=\"~a,~a\";
@@ -94,10 +110,9 @@ edge [fontname=~a,fontsize=~a];
 "
 	  (/ (max-dx graph) 72.0)(/ (max-dy graph) 72.0)
 	  (pdf:name *edge-label-font*) *edge-label-font-size*)
-  (loop for (attribute value) in (dot-attributes graph) do
-	(write-string attribute s)
-	(write-char #\= s)
-	(write-line value s))
+  (loop for (rank-constraint . nodes) in (rank-constraints graph) do
+	(format s "{rank = ~a; ~{~s;~^ ~}};~%" rank-constraint (mapcar 'id nodes)))
+  (gen-dot-attributes s (dot-attributes graph))
   (iter (for (id node) in-hashtable (nodes graph))
 	(gen-graph-dot-data node s))
   (iter (for (id edge) in-hashtable (edges graph))
@@ -105,13 +120,17 @@ edge [fontname=~a,fontsize=~a];
   (format s "}~%"))
 
 (defmethod gen-graph-dot-data ((node graph-node) s)
-  (format s "~s [shape=~a, fixedsize=true, width=~a, height=~a];~%"
-	  (id node)(shape node)(/ (dx node) 72.0)(/ (dy node) 72.0)))
+  (format s "~s [shape=~a, fixedsize=true, width=~a, height=~a"
+	  (id node)(shape node)(/ (dx node) 72.0)(/ (dy node) 72.0))
+  (gen-dot-attributes s (dot-attributes node) t)
+  (format s "];~%"))
 
 (defmethod gen-graph-dot-data ((edge graph-edge) s)
-  (format s "~s -> ~s [label=\"~a\", arrowhead=none];~%"
+  (format s "~s -> ~s [label=\"~a\", arrowhead=none"
 	  (id (head edge)) (id (tail edge))
-	  (if (label edge) (label edge) "")))
+	  (if (label edge) (label edge) ""))
+  (gen-dot-attributes s (dot-attributes edge) t)
+  (format s "];~%"))
 
 (defun read-graph-line-values (string)
   (when string
@@ -232,22 +251,23 @@ edge [fontname=~a,fontsize=~a];
 		    x3 (pop points) y3 (pop points))
 	      (pdf:bezier-to x1 y1 x2 y2 x3 y3))
 	(pdf:stroke)
-	(let* ((nx (- x1 x3))
-	       (ny (- y1 y3))
-	       (l (sqrt (+ (* nx nx)(* ny ny))))
-	       x0 y0)
-	  (when (zerop l)
-	    (setf nx (- prev-x1 x3) ny (- prev-y1 y3))
-	    (setf l (sqrt (+ (* nx nx)(* ny ny)))))
-	  (setf nx (/ nx l) ny (/ ny l))
-	  (pdf:move-to x3 y3)
-	  (setf x0 (+ x3 (* nx *arrow-length*)) y0 (+ y3 (* ny *arrow-length*))
-		nx (* nx *arrow-width*) ny (* ny *arrow-width*))
-	  (pdf:line-to (+ x0 ny)(- y0 nx))
-	  (pdf:line-to (- x0 ny)(+ y0 nx))
-	  (pdf:line-to x3 y3)
-	  (pdf:fill-and-stroke)))
-      (when (label edge)
-	(pdf:set-color-fill (label-color edge))
-	(pdf:draw-centered-text (label-x edge)(label-y edge)(label edge)
-				*edge-label-font* *edge-label-font-size*))))
+	(when (eq (direction edge) :forward)
+	  (let* ((nx (- x1 x3))
+		 (ny (- y1 y3))
+		 (l (sqrt (+ (* nx nx)(* ny ny))))
+		 x0 y0)
+	    (when (zerop l)
+	      (setf nx (- prev-x1 x3) ny (- prev-y1 y3))
+	      (setf l (sqrt (+ (* nx nx)(* ny ny)))))
+	    (setf nx (/ nx l) ny (/ ny l))
+	    (pdf:move-to x3 y3)
+	    (setf x0 (+ x3 (* nx *arrow-length*)) y0 (+ y3 (* ny *arrow-length*))
+		  nx (* nx *arrow-width*) ny (* ny *arrow-width*))
+	    (pdf:line-to (+ x0 ny)(- y0 nx))
+	    (pdf:line-to (- x0 ny)(+ y0 nx))
+	    (pdf:line-to x3 y3)
+	    (pdf:fill-and-stroke)))
+	(when (label edge)
+	  (pdf:set-color-fill (label-color edge))
+	  (pdf:draw-centered-text (label-x edge)(label-y edge)(label edge)
+				  *edge-label-font* *edge-label-font-size*)))))

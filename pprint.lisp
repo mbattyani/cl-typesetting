@@ -38,6 +38,14 @@
                          char))
             line))
 
+(defun read-from-string-ignoring-errors (string
+					 &optional eof-error-p eof-value
+					 &key start end preserve-whitespace)
+  (ignore-errors
+    (read-from-string string eof-error-p eof-value
+		      :start start :end end
+		      :preserve-whitespace preserve-whitespace)))
+
 (defun process-lisp-line (line)
   (multiple-value-bind (code comment)(split-comment line)
     (let* ((cleaned-line (clean-line code))
@@ -49,10 +57,9 @@
       (iter:iter
        (setf trimmed (position #\Space cleaned-line :start start :test #'char/=))
        (while (and trimmed (< trimmed length)))
-       (for (values obj end) = (ignore-errors
-                                 (read-from-string
+       (for (values obj end) = (read-from-string-ignoring-errors
                                   cleaned-line nil nil
-                                  :start trimmed :preserve-whitespace t)))
+                                  :start trimmed :preserve-whitespace t))
        (unless (numberp end)
          (setf end (position #\Space cleaned-line :start trimmed :test #'char=)))
        (while (and (numberp end) (< end length)))

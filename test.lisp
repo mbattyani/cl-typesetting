@@ -223,6 +223,7 @@
 	 (n14 (make-instance 'graph-node :data "v-spacing" :graph g1))
 	 (n15 (make-instance 'graph-node :data "char-box" :graph g1))
 	 (n16 (make-instance 'graph-node :data "white-char-box" :graph g1)))
+    (add-rank-constraint g1 "same" (list n1 n5 n15))
     (make-instance 'graph-edge :head n1 :tail n5 :label "subclass" :graph g1)
     (make-instance 'graph-edge :head n5 :tail n6 :graph g1)
     (make-instance 'graph-edge :head n6 :tail n7 :graph g1)
@@ -277,7 +278,10 @@
     g1))
 
 ;;; Example document
-; you need to load the fonts with something like this:
+; Copy the files from the directory "files-for-example/" (included in
+; the cl-typesetting distribution) to the /tmp directory (or somewhere else).
+;
+; Then you need to load the fonts with something like this:
 ;   (pdf:load-t1-font "/tmp/cmex10.afm" "/tmp/cmex10.pfb")
 ;   (pdf:load-t1-font "/tmp/cmti10.afm" "/tmp/cmti10.pfb")
 

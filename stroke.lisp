@@ -7,14 +7,12 @@
 (defmethod stroke (box x y)
   )
 
-(defmethod stroke :before ((box box) x y)
-  (if (and (functionp *pre-decoration*)
-	   (or (typep box 'char-box)
-	       (typep box 'white-char-box)))
-      (funcall *pre-decoration*
-	       box
-	       x (+ y (baseline box) (offset box))
-	       (dx box) (- (dy box)))))
+(defmethod stroke :before ((box char-box) x y)
+  (when (functionp *pre-decoration*) 
+    (funcall *pre-decoration*
+	     box
+	     x (+ y (baseline box) (offset box))
+	     (dx box) (- (dy box)))))
 
 (defmethod stroke :after ((box char-box) x y)
   (when (functionp *post-decoration*)

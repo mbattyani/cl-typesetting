@@ -293,8 +293,8 @@
     (setf (exception-trie hyphen-trie) (hyphen-make-trie exceptions 0))
     ))
 
-(setf *american-hyphen-trie* (make-instance 'hyphen-trie :language :american))
-(setf *french-hyphen-trie* (make-instance 'hyphen-trie :language :french))
+(defparameter *american-hyphen-trie* (make-instance 'hyphen-trie :language :american))
+(defparameter *french-hyphen-trie* (make-instance 'hyphen-trie :language :french))
 (read-hyphen-file *american-hyphen-trie*)
 (read-hyphen-file *french-hyphen-trie*)
 
