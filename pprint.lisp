@@ -91,8 +91,7 @@
                  (loop for line = (read-line s nil)
                        while line
                        do (with-text-compilation
-                              (process-lisp-line line)
-                            )))))
+                              (process-lisp-line line))))))
 
 (defmethod process-lisp-code ((lisp-file pathname))
   (with-open-file (s lisp-file :direction :input)

@@ -55,6 +55,7 @@
    (background-color :accessor background-color :initarg :background-color :initform '(1.0 1.0 1.0))
    (border-color :accessor border-color :initarg :border-color :initform '(0.0 0.0 0.0))
    (border-width :accessor border-width :initarg :border-width :initform 1)
+   (landscape-layout :accessor landscape-layout :initarg :landscape-layout :initform nil)
    (max-dx :accessor max-dx :initarg :max-dx :initform 400)
    (max-dy :accessor max-dy :initarg :max-dy :initform 400)
    (scale :accessor scale :initform 1)
@@ -166,10 +167,20 @@ edge [fontname=~a,fontsize=~a];
 	     (ignore-errors (delete-file result-file))))))
 
 (defun graph-box (graph &rest args)
-  (add-box (apply 'make-instance 'user-drawn-box
-		  :stroke-fn #'(lambda(box x y) (stroke graph x y))
-		  :inline t :dx (dx graph) :dy (dy graph)
-		  :allow-other-keys t args)))
+  (let ((dx (dx graph))
+	(dy (dy graph)))
+    (when (landscape-layout graph)
+      (rotatef dx dy))
+    (add-box (apply 'make-instance 'user-drawn-box
+		    :stroke-fn #'(lambda(box x y)
+				   (if (landscape-layout graph)
+				       (pdf:with-saved-state
+					   (pdf:translate x (- y dy))
+					   (pdf:rotate 90)
+					   (stroke graph 0 0))
+				       (stroke graph x y)))
+		    :inline t :dx dx :dy dy
+		    :allow-other-keys t args))))
 
 (defmethod stroke ((graph graph) x y)
   (pdf:with-saved-state
@@ -212,7 +223,7 @@ edge [fontname=~a,fontsize=~a];
       (pdf:set-color-fill (color edge))
       (pdf:set-line-width (width edge))
       (let ((points (points edge))
-	    x1 y1 x2 y2 x3 y3); prev-x1 prev-y1)
+	    x1 y1 x2 y2 x3 y3 prev-x1 prev-y1)
 	(pdf:move-to (pop points)(pop points))
 	(iter (while points)
 	      (setf prev-x1 x1 prev-y1 y1)
@@ -240,5 +251,3 @@ edge [fontname=~a,fontsize=~a];
 	(pdf:set-color-fill (label-color edge))
 	(pdf:draw-centered-text (label-x edge)(label-y edge)(label edge)
 				*edge-label-font* *edge-label-font-size*))))
-
-

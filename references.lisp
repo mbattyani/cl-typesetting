@@ -12,10 +12,14 @@
 
 (defclass ref-point ()
   ((id :accessor id :initform nil :initarg :id)
+   (located-p :accessor located-p :initform nil)
    (data :accessor data :initform nil :initarg :data)
    (page-number :accessor page-number :initform 999)
    (x :accessor x :initform nil)
    (y :accessor y :initform nil)))
+
+(defmethod located-p (obj)
+  nil)
 
 (defmethod stroke ((ref-point ref-point) x y)
   (let ((previous-ref (and *previous-reference-table*
@@ -23,7 +27,8 @@
 	(page-number pdf:*page-number*))
     (when (and previous-ref (/= page-number (page-number previous-ref)))
       (push (id ref-point) *changed-references*))
-    (setf (page-number ref-point) page-number
+    (setf (located-p ref-point) t
+	  (page-number ref-point) page-number
 	  (x ref-point) x
 	  (y ref-point) y)))
 
@@ -36,22 +41,22 @@
     (add-box ref-point)))
 
 (defun find-ref-point (id)
-  (let ((ref-point (or (gethash id *reference-table*)
-		       (and *previous-reference-table*
-			    (gethash id *previous-reference-table*)))))
-    (unless ref-point
+  (let ((ref-point (gethash id *reference-table*)))
+    (unless (located-p ref-point)
+      (setf ref-point (and *previous-reference-table* (gethash id *previous-reference-table*))))
+    (unless (located-p ref-point)
       (pushnew id *undefined-references*))
     ref-point))
 
 (defun find-ref-point-page-number (id)
   (let ((ref-point (find-ref-point id)))
-    (if ref-point
+    (if (located-p ref-point)
 	(page-number ref-point)
 	999)))
 
 (defun find-ref-point-page-data (id &optional default)
   (let ((ref-point (find-ref-point id)))
-    (if ref-point
+    (if (located-p ref-point)
 	(data ref-point)
 	default)))
 

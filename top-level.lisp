@@ -205,6 +205,10 @@
 	      (declare (dynamic-extent pdf::*page-stream*))
 	      ,@body)))))
 
+(defun write-document (filename &optional (document pdf:*document*))
+  (when (final-pass-p)
+    (pdf:write-document filename document)))
+
 ;(let* ((pdf:*document* (make-instance 'document ,@args))
 ;	    (pdf::*outlines-stack* (list (pdf::outline-root pdf:*document*)))
 ;	    (pdf::*root-page* (pdf::root-page pdf:*document*))

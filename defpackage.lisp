@@ -9,9 +9,10 @@
   (:nicknames tt)
   (:export
    #:with-text-content #:with-document #:compile-text #:draw-pages #:finalize-page
+   #:write-document
    #:paragraph 
    #:with-style #:set-style #:with-style
-   #:table #:row #:cell
+   #:table #:row  #:header-row  #:footer-row #:cell
    #:put-string #:format-string #:verbatim
    #:make-filled-vbox
    #:vspace #:hspace #:new-line #:new-page
