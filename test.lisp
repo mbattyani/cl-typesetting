@@ -211,7 +211,7 @@
 
 (defun single-page-example (&optional (file #P"/tmp/ex.pdf")
 				      (banner-jpg #P"/tmp/banner.jpg")
-				      (fractal-jpg #P"/tmp/fractal.jpg")))
+				      (fractal-jpg #P"/tmp/fractal.jpg"))
   (pdf:with-document ()
     (pdf:with-page ()
       (pdf:with-outline-level ("Example" (pdf:register-page-reference))
