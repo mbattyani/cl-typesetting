@@ -41,7 +41,7 @@
     (pdf:write-document file)))
 
 ; a multipage simple hello world
-(defun muli-page-hello (&optional (file #P"/tmp/hello.pdf"))
+(defun multi-page-hello (&optional (file #P"/tmp/hello.pdf"))
   (pdf:with-document ()
     (let ((content
 	   (compile-text ()
@@ -53,9 +53,9 @@
 			   (with-style (:font "Times-Italic" :font-size 26)
 			     "The cool Common Lisp typesetting system")
 			   (vspace 50)
+			   (with-style (:font "Times-Italic" :font-size 36 :color '(0.0 0 0.8))
 			     (dotimes (i 100)
-			       (with-style (:font "Helvetica-Oblique" :font-size 36 :color '(0.0 0 0.8))
-				 "Hello World!" :eol))))))
+			       (put-string "Hello World!")(new-line)))))))
       (loop while (boxes content) do
 	    (pdf:with-page ()
 	      (pdf:set-line-width 0.1)
@@ -269,23 +269,37 @@
 			     (cell ()(paragraph (:h-align :left :font "Times-Italic" :font-size 9)
 						"You can nest as many tables as you want, like you do in HTML."))))
 		 (paragraph (:h-align :justified :top-margin 5 :first-line-indent 10 :color '(0 0 0)
+				      :left-margin 5 :right-margin 5 
 				      :font "Times-Roman" :font-size 10 :text-x-scale 0.7)
 			    (with-style (:color '(0 0.6 0.4))
 			      "This paragraph has been horizontally strechted by a 0.7 ratio. ")
 			    *par1*)
+		 (vspace 10)
 		 (user-drawn-box :dx 210 :dy 100 :stroke-fn 'user-drawn-demo) :eol
-		 (paragraph (:h-align :justified :top-margin 9 :first-line-indent 10
-				      :left-margin 20 :right-margin 20 :font "Helvetica" :font-size 9)
-			    *par2*)
+		 (paragraph (:h-align :centered :font "Times-Italic" :font-size 8 :top-margin 5)
+			    "An example of using cl-typesetting in an user-drawn box.")
+		 (paragraph (:h-align :left :top-margin 15
+				      :left-margin 5 :right-margin 5 :font "courier" :font-size 8)
+			    (put-source-code-string
+"(defmethod stroke ((box char-box) x y)
+  (pdf:in-text-mode
+   (pdf:move-text x (+ y (offset box)))
+   (pdf:set-font *font* *font-size*)
+   (pdf:set-text-x-scale (* *text-x-scale* 100))
+   (pdf:show-char (boxed-char box))))"))
+		 (paragraph (:h-align :centered :font "Times-Italic" :font-size 8 :top-margin 3)
+			    "An example of verbatim code.")
 		 (paragraph (:h-align :justified :top-margin 9 :font "Helvetica-Oblique"
+				      :left-margin 5 :right-margin 5 
 				      :font-size 9 :first-line-indent 20)
 			   *par1*)
 		 (user-drawn-box :dx 240 :dy 100 :stroke-fn 'draw-pie) :eol
 		 (paragraph (:h-align :centered :font "Times-Italic" :font-size 8)
 			    "An example of cl-pdf pie chart inserted.")
-		 (paragraph (:h-align :justified :top-margin 9 :font "Helvetica-Oblique" :font-size 9
+		 (paragraph (:h-align :justified :top-margin 9 :font "helvetica" :font-size 9
 				      :left-margin 40 :right-margin 40)
 			    *par2*)
+		 (vspace 10)
 		 (paragraph (:h-align :centered :top-margin 20 :font "Times-Bold" :font-size 20)
 			    "Kerning test" :eol
 			    (with-style (:font "Helvetica" :font-size 40 :left-margin 20 :right-margin 20)
@@ -310,7 +324,7 @@
 				      :font-size 40 :color '(0.8 0 0))
 			    "Warning!" :eol
 			    (with-style (:font "Times-Italic" :font-size 14)
-			      "This test pdf file has been made with" :eol "cl-typesetting 0.6." :eol
+			      "This test pdf file has been made with" :eol "cl-typesetting 0.67" :eol
 			      (vspace 10)
 			      "Marc Battyani"))
 		 :vfill

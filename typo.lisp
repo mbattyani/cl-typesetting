@@ -71,6 +71,7 @@
     (%use-style% font-size *font-size*)
     (%use-style% text-x-scale *text-x-scale*)
     (%use-style% color *color*)
+    (%use-style% background-color *background-color*)
     (%use-style% left-margin *left-margin*)
     (%use-style% right-margin *right-margin*)
     (%use-style% h-align *h-align*))
@@ -131,10 +132,15 @@
 						     *text-x-scale*)
 		   :dy *leading* :baseline *font-size*)))
 
-(defun make-white-char-box (char)
+(defun make-white-char-box (char &optional (trimable-p t))
   (let ((width (* (pdf:get-char-width char *font* *font-size*) *text-x-scale*)))
-    (make-instance 'white-char-box :dx width :max-expansion (* width 10) :max-compression (* width 0.7)
+    (make-instance 'white-char-box :trimable-p trimable-p
+		   :dx width :max-expansion (* width 10) :max-compression (* width 0.7)
 		   :expansibility (* width 2.0) :compressibility width)))
+
+(defun make-not-trimable-white-char-box (char)
+  (let ((width (* (pdf:get-char-width char *font* *font-size*) *text-x-scale*)))
+    (make-instance 'h-spacing :dx width :max-expansion width :max-compression width)))
 
 (defun make-kerning-space (dx)
   (make-instance 'hglue :dx dx :locked t))
@@ -188,7 +194,7 @@
   (when (stringp string)
     (let ((hyphen-points (hyphenate-string string)))
       (loop with hyphen-point = (pop hyphen-points)
-	  for prev-char = #\a then char
+	  for prev-char = #\I then char
 	  for char across string
 	  for i from 0
 	  for kerning = (* (pdf:get-kerning prev-char char *font* *font-size*) *text-x-scale*)
@@ -206,6 +212,18 @@
 		  (add-box (make-kerning-space kerning)))
 		(add-box (make-char-box char))
 		(add-box (make-inter-char-glue))))))))
+
+;;; put a source code string: no kerning, no hyphenation, significant whitespaces, significant returns
+(defun put-source-code-string (string)
+  (when (stringp string)
+    (loop for char across string
+	  for i from 0
+	  do
+	    (cond
+	      ((char= char #\Newline)(add-box :eol))
+	      ((white-char-p char)(add-box (make-white-char-box char nil)))
+	      (t (add-box (make-char-box char))
+		 (add-box (make-inter-char-glue)))))))
 
 (defun new-line ()
   (add-box :eol))

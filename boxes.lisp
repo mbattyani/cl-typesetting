@@ -112,7 +112,7 @@
   ((boxed-char :accessor boxed-char :initform nil :initarg :boxed-char)))
 
 (defclass white-char-box (hglue)
-  ())
+  ((trimable-p :accessor trimable-p :initform nil :initarg :trimable-p)))
 
 (defmethod soft-box-p (box)
   nil)
