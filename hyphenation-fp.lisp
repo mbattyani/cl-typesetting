@@ -57,17 +57,28 @@
 (defmethod (setf exception-trie) (value hyphen-trie)
   value)
 
+(defvar *left-hyphen-minimum* 2
+  "Minimum number of characters that must precede a hyphen.")
+
+(defvar *right-hyphen-minimum* 3
+  "Minimum number of characters that must follow a hyphen.")
+
 ;; This will hold the lambda function which will execute the trie
 (defmethod hyphen-find-hyphen-points (hyphen-trie word)
 #+nil
   (funcall (symbol-function (fn-find-hyphen-points hyphen-trie)) word)
   (let* ((word-seq (coerce word 'list))
+	 (word-length (length word))
 	 (result (hyphen-trie-find-exception word-seq (exception-trie hyphen-trie))))
     (unless result
       (setq result (hyphen-trie-find `(#\. ,@word-seq #\.) (pattern-trie hyphen-trie))))
-    (mapcar #'first (remove-if
-	     #'(lambda (x) (or (eq (first x) :end) (eq (first x) 0)))
-	     result))))
+    (mapcar #'first (remove-if 
+                     #'(lambda (x)
+                         (let ((idx (first x)))
+                           (or (eq idx :end)
+                               (< idx *left-hyphen-minimum*)
+                               (< (- word-length idx) *right-hyphen-minimum*))))
+                     result))))
 
 ;; Format of the language file:
 ;; the first line has 'pattern'
