@@ -6,7 +6,6 @@
 
 (in-package asdf)
 
-#+(or allegro lispworks cmu sbcl openmcl mcl scl)
 (defsystem :cl-typesetting
     :name "cl-typesetting"
     :author "Marc Battyani <marc.battyani@fractalconcept.com>"

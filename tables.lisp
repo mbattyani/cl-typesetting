@@ -91,19 +91,10 @@
         when (> i 1)				; set all but last rows unsplittable
           do (setf (splittable-p row) nil)
         do
-        #-clisp
 	(loop for j = 0 then (+ j (col-span c))
-              and tail on (cells row)
+              for tail = (cells row) then (cdr tail);; hack for CLISP instead of for tail on (cells row)
               for c = (first tail)		; j is the column number of c
-              while (< j col-number)
-              collect (first tail) into head
-              finally				; insert cell between head and tail
-              (setf (cells row) (nconc head (list cell) tail)))
-        #+clisp
-	(loop for j = 0 then (+ j (col-span c))
-              for tail = (cells row) then (cdr tail)
-              for c = (first tail)		; j is the column number of c
-              while (and tail (< j col-number))
+              while (and c (< j col-number))
               collect (first tail) into head
               finally				; insert cell between head and tail
               (setf (cells row) (nconc head (list cell) tail)))
@@ -114,34 +105,44 @@
   (let ((full-size-offset (+ (border table) (* 2 (cell-padding table))))
         (height (or (height row) +huge-number+)))
     (loop with next-widths = (col-widths table)
-          for width = (or (pop next-widths) 0)	; in case less elements specified
           for cell in (cells row)
-          for col-number = 0 then (+ col-number col-span 1)
-          and col-span = (1- (col-span cell))
+          and width = (or (pop next-widths) 0)	; in case less elements specified
+          and col-number = 0 then (+ col-number col-span 1)
+	  and cell-height = 0.0
+          for col-span = (1- (col-span cell))
           and row-span = (row-span cell)
+	  
+	  ;; Adjust cell width for cells spanning multiple columns
           unless (zerop col-span)
             do (incf width (+ (* col-span full-size-offset)
                               (reduce #'+ next-widths :end col-span)))
                (setf next-widths (nthcdr col-span next-widths))
+
+          ;; Fill cell with content if required
           when (cell-start-row-p cell row)
             do (setf (box cell) (make-filled-vbox (content cell) width height)
                      (width cell) width)
+	    
           ;; A cell spanning several rows participates only in height calculation 
           ;; of the last row
           if (and (numberp row-span) (> row-span 1))
           do (span-cell rows cell col-number)
           else unless (height row)
             if (eql row-span 1)
-            maximize (compute-boxes-natural-size (boxes (box cell)) #'dy) into max-height
+            do (setq cell-height
+		     (compute-boxes-natural-size (boxes (box cell)) #'dy))
             else if (cell-end-row-p cell row)
-            maximize (- (compute-boxes-natural-size (boxes (box cell)) #'dy)
-                        (reduce #'+ row-span
-                                :key #'height
-                                :end (1- (length row-span))
-                                :initial-value (* (1- (length row-span))
-                                                  full-size-offset)))  into max-height
-          finally (setf height (+ (max (or (height row) 0)
-				       #-clisp max-height #+clisp (or max-height 0)) +epsilon+)))
+	    do (setq cell-height
+		     (- (compute-boxes-natural-size (boxes (box cell)) #'dy)
+			(reduce #'+ row-span
+				:key #'height
+			:end (1- (length row-span))
+				:initial-value (* (1- (length row-span))
+						  full-size-offset))))
+
+	  maximize cell-height into max-height
+
+          finally (setf height (+ (max (or (height row) 0.0) max-height) +epsilon+)))
     (setf (height row) height)
     (loop for cell in (cells row)
           for row-span = (row-span cell)
@@ -181,48 +182,59 @@
     (dolist (row footer) (compute-row-size table row footer))))
                 
 (defmethod v-split ((table multi-page-table) dx dy &optional v-align)
- ;;; Factor out rows that fit and return as a first value.
-  (with-slots (header footer rows-left) table
+  "Factor out rows that fit and return as a first value."
+  ;; Treat unsplittable rows as a single unit - for this purpose,
+  ;; group the rows-left list into the following form:
+  ;;
+  ;;     ( (group1-height row1 row2 ...)
+  ;;       (group2-height row7)
+  ;;       (group3-height row8 row9 ...) )
+  ;;
+  (with-slots (header footer border padding cell-padding) table
     (loop with boxes = ()
-          with border = (border table)
-          and padding = (padding table)
-          and cell-padding = (cell-padding table)
-          with full-size-offset = (+ cell-padding cell-padding border)
-          with max-height = (- dy (reduce #'+ header :key #'dy) (reduce #'+ footer :key #'dy))
-          for rows on rows-left
-          and prev-y = 0 then y		; vertical space that has been output
-          for row = (first rows)
-          for y = (+ padding border (height row) full-size-offset)
-                then (+ y (height row) full-size-offset)
-          while (<= y max-height)
-          ;do (setf (dy row) (+ (height row) full-size-offset))
-          do (push row boxes)
-          finally
-	  #+clisp (unless (> y max-height) (pop rows))
-          (when (and boxes
-                     ;; Trim unsplitalbe rows and reverse the list of accumulated boxes
-                     (setf boxes
-			   #-clisp
-			   (loop for tail on boxes
-				 for row = (first tail)
-				 until (splittable-p row)
-				 do (decf prev-y (+ (height row) full-size-offset))
-				 finally (return (nreverse tail)))
-			   #+clisp
-			   (loop for tail = boxes then (cdr tail)
-				 for row = (first tail)
-				 until (or (not row) (splittable-p row))
-				 do (decf prev-y (+ (height row) full-size-offset))
-				 finally (return (nreverse tail)))))
-            (setq boxes (append header boxes footer))
+	  with header+footer-height = (+ (reduce #'+ header :key #'dy)
+					 (reduce #'+ footer :key #'dy))
+	  with current-height = (+ border padding)
+	  with available-height = (- dy header+footer-height)
+	  with row-groups = (loop with height = 0
+				  and  rows = ()
+	
+				  for row in (rows-left table)
+
+				  do
+				  (incf height (+ (height row)
+						  (* 2 cell-padding)
+						  border))
+				  (push row rows)
+
+				  when (splittable-p row)
+				  collect (cons height (nreverse rows))
+				  and do (setf height 0 rows nil))
+	  with rows-remaining = (rows-left table)
+	  
+          for (group-height . rows) in row-groups
+	  while (<= (+ current-height group-height) available-height)
+
+	  do (dolist (r rows)
+	       (push r boxes)
+	       (pop rows-remaining))
+	  (incf current-height group-height)
+	  
+	  finally
+	  (when boxes
+	    (setq boxes (append header (nreverse boxes) footer))
+	    ;; reduce rows to output
+	    (setf (rows-left table) rows-remaining)
+	    ;; reduce space required by table (don't subtract header/footer)
+	    (decf (slot-value table 'dy) current-height)
             (let ((first (first boxes))
                   (last (first (last boxes))))
               (setf (slot-value first 'position) :first
                     (slot-value last 'position) (if (eq first last) :single :last)))
-            (setf rows-left rows)			; reduce rows to output
-            (decf (slot-value table 'dy) prev-y)	; and space required by table
-            (return (values boxes rows (- max-height prev-y))))
-          (return (values nil rows-left dy)))))
+	    (return (values boxes
+			    rows-remaining
+			    (- dy current-height header+footer-height))))
+	  (return (values nil rows-remaining dy)))))
 
 (defmethod dy :around ((table multi-page-table))
   (with-slots (header footer) table
