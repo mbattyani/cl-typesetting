@@ -5,7 +5,7 @@
 (in-package "CL-USER")
 
 (defpackage typeset
-  (:use common-lisp)
+  (:use common-lisp iterate)
   (:nicknames tt)
   (:export
    #:with-text-content
