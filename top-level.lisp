@@ -51,6 +51,10 @@
   (room-left :accessor room-left :initarg :room-left :initform 0)
 ))
 
+(defun remove-properties (plist keys)
+  (loop for (key value) on plist by #'cddr
+        unless (member key keys) nconc (list key value)))
+
 (defun draw-pages (content &rest args
                    &key (size *default-page-size*)
                         (orientation *default-page-orientation*)
@@ -78,7 +82,7 @@
                                      :footer-bottom footer-bottom
                                      ;; Move room-left into initialize-instance :after?
                                      :room-left (- height top-margin bottom-margin)
-                                     (sys::remove-properties args
+                                     (remove-properties args
                                        '(:size :orientation :bounds
                                          :header-top :footer-bottom :break))))))
       (when (and pdf:*page* (member break '(:before :always)))
