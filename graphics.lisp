@@ -93,3 +93,23 @@
 		      (stroke-colored-box box x y color border-width border-color))
 		  :allow-other-keys t :offset offset args)))
 
+(defclass dotted-spacing (soft-box h-mode-mixin)
+  ((char-pattern :accessor char-pattern :initarg :char-pattern :initform ".")
+   (pattern-spacing :accessor pattern-spacing :initarg :pattern-spacing :initform 0.3)))
+
+(defmethod stroke ((box dotted-spacing) x y)
+  (let* ((pattern-width (pdf::text-width (char-pattern box) *font* *font-size*))
+	 (spacing-width (* *font-size* (pattern-spacing box)))
+	 (total-width (+ pattern-width spacing-width))
+	 (last-x (- (+ x (dx box)(delta-size box)) pattern-width)))
+    (incf y (offset box))
+    (loop for x from (* total-width (ceiling x total-width)) by total-width
+	  while (< x last-x)
+	  do (pdf:in-text-mode
+	      (pdf:move-text x y)
+	      (pdf:set-font *font* *font-size*)
+	      (pdf:show-text (char-pattern box))))))
+
+(defun dotted-hfill (&rest args)
+  (add-box (apply 'make-instance 'dotted-spacing
+		  :dx 0 :max-expansion +huge-number+ :expansibility +huge-number+ args)))

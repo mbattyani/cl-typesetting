@@ -135,22 +135,22 @@
 						     *text-x-scale*)
 		   :dy *leading* :baseline *font-size*)))
 
-(defun make-white-char-box (char &optional (trimable-p t))
+(defun make-white-char-box (char &optional (trimmable-p t))
   (let ((width (* (pdf:get-char-width char *font* *font-size*) *text-x-scale*)))
-    (make-instance 'white-char-box :trimable-p trimable-p
+    (make-instance 'white-char-box :trimmable-p trimmable-p
 		   :dx width :max-expansion (* width 10) :max-compression (* width 0.7)
 		   :expansibility (* width 2.0) :compressibility width)))
 
-(defun make-not-trimable-white-char-box (char)
+(defun make-not-trimmable-white-char-box (char)
   (let ((width (* (pdf:get-char-width char *font* *font-size*) *text-x-scale*)))
     (make-instance 'h-spacing :dx width :max-expansion width :max-compression width)))
 
 (defun make-kerning-space (dx)
   (make-instance 'hglue :dx dx :locked t))
 
-(defun make-ponctuation-space-box (char)
+(defun make-punctuation-space-box (char)
   (let ((width (* (pdf:get-char-width char *font* *font-size*) *text-x-scale*))
-	(space-params (cdr (assoc char *ponctuation-marks-extra-spacing-ratios* :test #'char=))))
+	(space-params (cdr (assoc char *punctuation-marks-extra-spacing-ratios* :test #'char=))))
     (when space-params
       (destructuring-bind (w max-exp exp max-compr compr) space-params
 	  (make-instance 'white-char-box :dx (* width w)
@@ -187,8 +187,8 @@
   (when box
     (add-box-to-content *content* box)))
 
-(defun ponctuation-mark-p (char)
-  (find char *ponctuation-marks*))
+(defun punctuation-mark-p (char)
+  (find char *punctuation-marks*))
 
 (defun white-char-p (char)
   (find char *white-chars*))
@@ -209,7 +209,7 @@
 	     ((white-char-p char)
 	      (cond
 	       ((white-char-p prev-char) nil)
-	       ((ponctuation-mark-p prev-char)(add-box (make-ponctuation-space-box prev-char)))
+	       ((punctuation-mark-p prev-char)(add-box (make-punctuation-space-box prev-char)))
 	       (t (add-box (make-white-char-box #\Space)))))
 	     (t (unless (zerop kerning)
 		  (add-box (make-kerning-space kerning)))
@@ -231,6 +231,9 @@
 (defun new-line ()
   (add-box :eol))
 
+(defun fresh-page ()
+  (add-box :fresh-page))
+
 (defun new-page ()
   (add-box :eop))
 
@@ -242,6 +245,9 @@
 
 (defmethod insert-stuff ((obj (eql :eol)))
   '(new-line))
+
+(defmethod insert-stuff ((obj (eql :fresh-page)))
+  '(fresh-page))
 
 (defmethod insert-stuff ((obj (eql :eop)))
   '(new-page))

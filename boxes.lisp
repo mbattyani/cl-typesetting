@@ -41,10 +41,10 @@
 (defclass v-mode-mixin ()
   ())
 
-(defmethod v-splitable-p (box max-dy)
+(defmethod v-splittable-p (box max-dy)
   nil)
 
-(defmethod h-splitable-p (box max-dx)
+(defmethod h-splittable-p (box max-dx)
   nil)
 
 (defclass elasticity ()
@@ -100,7 +100,7 @@
 (defclass vglue (glue v-mode-mixin)
   ())
 
-(defclass spacing (soft-box) ;; non trimable white space
+(defclass spacing (soft-box) ;; non trimmable white space
   ())
 
 (defclass h-spacing (spacing h-mode-mixin) 
@@ -113,7 +113,7 @@
   ((boxed-char :accessor boxed-char :initform nil :initarg :boxed-char)))
 
 (defclass white-char-box (hglue)
-  ((trimable-p :accessor trimable-p :initform nil :initarg :trimable-p)))
+  ((trimmable-p :accessor trimmable-p :initform nil :initarg :trimmable-p)))
 
 (defmethod soft-box-p (box)
   nil)
@@ -133,10 +133,10 @@
 (defmethod white-char-box-p ((box white-char-box))
   t)
 
-(defmethod trimable-p (box)
+(defmethod trimmable-p (box)
   nil)
 
-(defmethod trimable-p ((box glue))
+(defmethod trimmable-p ((box glue))
   t)
 
 (defmethod white-space-p (box)

@@ -39,9 +39,9 @@
 
 (defvar *white-chars* (coerce '(#\Space #\Tab #\Newline #\Return) 'string))
 
-(defvar *ponctuation-marks* ".;:!?,")
+(defvar *punctuation-marks* ".;:!?,")
 
-(defvar *ponctuation-marks-extra-spacing-ratios*
+(defvar *punctuation-marks-extra-spacing-ratios*
   '((#\. 1.5 15.0 3.0 0.7 2.0)
     (#\; 1.5 15.0 3.0 0.7 2.0)
     (#\: 1.5 15.0 3.0 0.7 2.0)

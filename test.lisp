@@ -40,7 +40,22 @@
 			      "The cool Common Lisp typesetting system")
 			    (vspace 50)
 			    (with-style (:font "Helvetica-Oblique" :font-size 100)
-			      "Hello World!")))))
+			      "Hello World!")
+			    (vspace 50)
+			    (with-style (:font "Helvetica" :font-size 12)
+			      "hello" (dotted-hfill) "4.2" :eol
+			      "hello world" (dotted-hfill) "4.2.4.2"))
+		 (paragraph (:h-align :justified :font "Helvetica" :font-size 12 :color '(0.0 0 0.0))
+			    "hello" (dotted-hfill) "4.2" :eol
+			    "hello world" (dotted-hfill) "4.2.4.2")
+			    (vspace 50)
+		 (paragraph (:h-align :justified :font "Helvetica" :font-size 12 :color '(0.0 0 0.0))
+			    "hello" (dotted-hfill :pattern-spacing 0.6) "4.2" :eol
+			    "hello world" (dotted-hfill :pattern-spacing 0.6) "4.2.4.2")
+			    (vspace 50)
+		 (paragraph (:h-align :justified :font "Helvetica" :font-size 12 :color '(0.0 0 0.0))
+			    "hello" (dotted-hfill :char-pattern ".+" :pattern-spacing 0) "4.2" :eol
+			    "hello world" (dotted-hfill :char-pattern ".+" :pattern-spacing 0) "4.2.4.2"))))
 	  (draw-block content 20 800 545 700))))
     (pdf:write-document file)))
 
@@ -402,13 +417,13 @@
                 (dotimes (j (1+ (random 5)))
                   (put-string "The quick brown fox jumps over the lazy dog. "))))
             
-            (table (:col-widths '(20 100 100 100) :inline nil :splitable-p nil
+            (table (:col-widths '(20 100 100 100) :inline nil :splittable-p nil
                             :border 0 :background-color '(1 1 0.8))
               (row ()
                 (cell (:col-span 4)
                   (paragraph (:h-align :center
                                       :font "Times-Italic" :font-size 12)
-                    "Non-splitable table - row with a col-span of 4")))
+                    "Non-splittable table - row with a col-span of 4")))
               (loop for (name tel age) = (list "Dmitri Dmitriev" "555-1234" (+ 25 (random 25)))
                     and row-number from 1 upto 4
                     do
@@ -425,13 +440,13 @@
     (draw-pages content :margins margins :header header :footer footer)
 
     (setq content
-          (table (:col-widths '(20 100 100 100) :inline t :splitable-p t
+          (table (:col-widths '(20 100 100 100) :inline t :splittable-p t
                           :border 1/2 :background-color '(1 1 0.8))
             (header-row (:background-color :gray)
               (cell (:row-span 2) (verbatim "Row #"))
               (cell (:row-span 2) "Name")
               (cell () "Telephone")
-                ;(table (:col-widths '(100) :inline t :splitable-p nil
+                ;(table (:col-widths '(100) :inline t :splittable-p nil
                 ;                :padding 0 :border 1/2); :background-color '(1 1 0.8))
                 ;  (row () (cell () "Telephone"))
                 ;  (row () (cell () "Fax"))))
@@ -461,7 +476,7 @@
     (setq content	;; Various spans
           (table (:col-widths '(20 40 60 80 120)
                           :background-color :yellow :border 1
-                          :inline 1 :splitable-p 1)
+                          :inline 1 :splittable-p 1)
             (header-row ()
               (cell (:col-span 5)
                 (paragraph (:h-align :center

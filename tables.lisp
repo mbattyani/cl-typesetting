@@ -2,7 +2,7 @@
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
 ;;; The homepage of cl-typesetting is here: http://www.fractalconcept.com/asp/html/cl-typesetting.html
 
-;;; Thanks to Dmitri Ivanov for the splitable tables!
+;;; Thanks to Dmitri Ivanov for the splittable tables!
 
 (in-package typeset)
 
@@ -21,7 +21,7 @@
 
 (defclass table-row ()
   ((height :accessor height :initform nil :initarg :height)
-   (splitable-p :accessor splitable-p :initform t :initarg :splitable-p)
+   (splittable-p :accessor splittable-p :initform t :initarg :splittable-p)
    (background-color :accessor background-color :initform nil :initarg :background-color)
    (cells :accessor cells :initform () :initarg :cells)))
 
@@ -84,12 +84,12 @@
   ;; and add the cell into the cell list of each of these rows.
   ;; Args: rows    Table row sublist starting from the one where the cell was defined.
   ;;   col-number  Starts from zero.
-  (setf (splitable-p (first rows)) nil)
+  (setf (splittable-p (first rows)) nil)
   (loop for row in (rest rows)
         and i downfrom (1- (row-span cell)) above 0	;repeat (1- (row-span cell))
         collect row into rows-spanned
-        when (> i 1)				; set all but last rows unsplitable
-          do (setf (splitable-p row) nil)
+        when (> i 1)				; set all but last rows unsplittable
+          do (setf (splittable-p row) nil)
         do
         (loop for j = 0 then (+ j (col-span c))
               and tail on (cells row)
@@ -192,7 +192,7 @@
                      ;; Trim unsplitalbe rows and reverse the list of accumulated boxes
                      (setf boxes (loop for tail on boxes
                                        for row = (first tail)
-                                       until (splitable-p row)
+                                       until (splittable-p row)
                                        do (decf prev-y (+ (height row) full-size-offset))
                                        finally (return (nreverse tail)))))
             (setq boxes (append header boxes footer))
@@ -315,10 +315,10 @@
                        (border 1) (border-color #x00000) 
 		       background-color
                        header footer
-                       inline (splitable-p (or header footer)))
+                       inline (splittable-p (or header footer)))
 		 &body body)
   (with-gensyms (hbox)
-    `(let* ((*table* (make-instance (if ,splitable-p 'multi-page-table 'table)
+    `(let* ((*table* (make-instance (if ,splittable-p 'multi-page-table 'table)
                                     ,@(when header `((:header ,header)))
                                     ,@(when footer `((:footer ,footer)))
                                     :col-widths ,col-widths
@@ -335,14 +335,14 @@
       *table*)))
 
 (defmacro header-row ((&rest args) &body body)
-  `(let* ((*table-row* (make-instance 'multi-page-row :splitable-p nil ;:position :first 
+  `(let* ((*table-row* (make-instance 'multi-page-row :splittable-p nil ;:position :first 
                                       ,@args)))
     (setf (header *table*) (nconc (header *table*) (list *table-row*)))
     ,@body
     *table-row*))
 
 (defmacro footer-row ((&rest args) &body body)
-  `(let* ((*table-row* (make-instance 'multi-page-row :splitable-p nil ;:position :last
+  `(let* ((*table-row* (make-instance 'multi-page-row :splittable-p nil ;:position :last
                                       ,@args)))
     (setf (footer *table*) (nconc (footer *table*) (list *table-row*)))
     ,@body
@@ -362,10 +362,10 @@
 
 #|
 ;(let ((pdf:*page*(setq content
-(defun make-test-table (&optional (inline t) (splitable-p nil) (border 1/2))
+(defun make-test-table (&optional (inline t) (splittable-p nil) (border 1/2))
   (typeset:table (:col-widths '(20 40 60 80 120)
                   :background-color :yellow :border border
-                  :inline inline :splitable-p splitable-p)
+                  :inline inline :splittable-p splittable-p)
     (typeset::row (:background-color :green)
       (typeset:cell (:row-span 2 :background-color :blue)
                     "1,1 2,1  row-span 2")
