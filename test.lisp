@@ -290,7 +290,7 @@
 							 :background-color '(0.4 0.4 0.8))
 					    (row () (cell () "12")(cell () "34")(cell () "567"))
 					    (row () (cell () "ab")(cell () "cd")(cell () "efg"))))
-			     (cell ()(paragraph (:h-align :left :font "Times-Italic" :font-size 9)
+			     (cell (:v-align :bottom)(paragraph (:h-align :left :font "Times-Italic" :font-size 9)
 						"You can nest as many tables as you want, like you do in HTML."))))
 		 (paragraph (:h-align :justified :top-margin 5 :first-line-indent 10 :color '(0 0 0)
 				      :left-margin 5 :right-margin 5 
@@ -509,3 +509,34 @@
      ;(draw-page content :margins 72))
    (pdf:write-document file))
   table)
+
+#+nil
+(defun multi-page-hello (&optional (file #P"/tmp/hello.pdf"))
+   (pdf:with-document ()
+     (let ((content
+   (compile-text ()
+     (vspace 100)
+     (table (:col-widths '(100 200) :splittable-p 1 :inline t)  ;;; start Erik changes
+            (dotimes (time 50)
+              (row ()
+                   (cell ()
+                         (paragraph () (put-string (format nil "test ~d" time)))))))  ;;; end Erik changes
+     (vspace 10)
+     :eol 
+     (paragraph (:h-align :center :font "Helvetica-Bold" :font-size 50 
+                          :color '(0.0 0 0.8))
+                "cl-typesetting" :eol
+                (vspace 2)
+                (hrule :dy 1)
+                (with-style (:font "Times-Italic" :font-size 26)
+                  "The cool Common Lisp typesetting system")
+                (vspace 50)
+                (with-style (:font "Times-Italic" :font-size 36 :color '(0.0 0 
+                                                                         0.8))
+                  (dotimes (i 100)
+                    (put-string "Hello World!")(new-line)))))))
+       (loop while (boxes content) do
+             (pdf:with-page ()
+               (pdf:set-line-width 0.1)
+               (draw-block content 20 800 545 700))))
+     (pdf:write-document file)))

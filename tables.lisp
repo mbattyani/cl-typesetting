@@ -15,6 +15,7 @@
    (box :accessor box)
    (width :accessor width :initform 0)
    (height :accessor height :initform 0)
+   (v-align :accessor v-align :initform :top :initarg :v-align)
    (background-color :accessor background-color :initform nil :initarg :background-color)
    (col-span :accessor col-span :initform 1 :initarg :col-span)
    (row-span :accessor row-span :initform 1 :initarg :row-span)))
@@ -120,7 +121,7 @@
 
           ;; Fill cell with content if required
           when (cell-start-row-p cell row)
-            do (setf (box cell) (make-filled-vbox (content cell) width height)
+            do (setf (box cell) (make-filled-vbox (content cell) width height (v-align cell))
                      (width cell) width)
 	    
           ;; A cell spanning several rows participates only in height calculation 
