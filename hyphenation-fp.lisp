@@ -261,7 +261,7 @@
                                  :type "txt" :version nil
                                  :defaults *hyphen-patterns-directory*))
         patterns exceptions count)
-    (with-open-file (input filename)
+    (with-open-file (input filename :external-format pdf::+external-format+)
       (do ((line (read-line input nil nil))
 	   mode)
 	  ((null line))

@@ -1,5 +1,6 @@
-;;; cl-typesetting copyright 2003 Marc Battyani see license.txt for details of the license
+;;; cl-typesetting copyright 2003-2004 Marc Battyani see license.txt for the details
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
+;;; The homepage of cl-typesetting is here: http://www.fractalconcept.com/asp/html/cl-typesetting.html
 
 (in-package typeset)
 
@@ -34,12 +35,18 @@
   (let ((string ())
 	(offset 0)
 	(nb-spaces 0)
+	#+lispworks (notevery-base-char-p nil)
 	text-x text-y
 	(text-chunk ()))
     (labels ((end-string ()
 	       (when string
-		 (push (coerce (nreverse string) 'string) text-chunk)
-		 (setf string nil)))
+		 (push (coerce (nreverse string)
+                               #-lispworks 'string
+                               #+lispworks (if notevery-base-char-p
+                                               'lw:text-string 'string))
+                       text-chunk)
+		 (setf string nil
+		       #+lispworks notevery-base-char-p #+lispworks nil)))
 	     (end-text-chunk ()
 	       (end-string)
 	       (setf nb-spaces 0)
@@ -58,8 +65,10 @@
 	       (unless (or string text-chunk)
 		 (setf text-x x text-y (+ offset y)))
 	       (let ((char (boxed-char char-box)))
-		 (when (find char "\\()" :test #'char=)
-		   (push #\\ string))
+		 (if (find char "\\()" :test #'char=)
+		     (push #\\ string)
+		     #+lispworks (when (not (lw:base-char-p char))
+				   (setf notevery-base-char-p t)))
 		 (push char string)))
 	     (add-spacing (space)
 	       (setf space (round (/ (* -1000 space) *text-x-scale*) *font-size*))

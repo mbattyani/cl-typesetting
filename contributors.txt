@@ -1,10 +1,14 @@
+;;; cl-typesetting copyright 2003-2004 Marc Battyani see license.txt for the details
+;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
+;;; The homepage of cl-typesetting is here: http://www.fractalconcept.com/asp/html/cl-typesetting.html
 
 I'd like to thank the following individuals for their contributions to cl-typesetting:
 
 David J Cooper Jr (ACL compatibility, text-x-scale)
 Manuel Giraud (enumerate)
+Dmitri Ivanov (splitable tables, top-level document structure, lots of improvements)
 Fabrice Popineau (TeX hyphenation algorithm)
-Peter Seibel (Tests)
+Peter Seibel (lots of testing, improvements)
 Klaus Weidner (CMUCL compatibility)
 
 I apologize if I've missed someone. Please let me know if that's the case.

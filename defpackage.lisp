@@ -5,6 +5,7 @@
 
 (defpackage typeset
   (:use common-lisp)
+  (:nicknames tt)
   (:export
    #:with-text-content
    #:paragraph

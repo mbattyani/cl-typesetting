@@ -1,10 +1,14 @@
-;;; cl-typesetting copyright 2002 Marc Battyani see license.txt for details of the license
+;;; cl-typesetting copyright 2003-2004 Marc Battyani see license.txt for the details
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
+;;; The homepage of cl-typesetting is here: http://www.fractalconcept.com/asp/html/cl-typesetting.html
 
 (in-package typeset)
 
+;;; Low level tests
+
 (defparameter *boxes* nil) ;for debugging...
 
+#+nil
 (defun draw-block (content x y dx dy rotation &key (v-align :top) special-fn)
   (pdf:with-saved-state
     (pdf:translate x y)
@@ -37,7 +41,7 @@
 			    (vspace 50)
 			    (with-style (:font "Helvetica-Oblique" :font-size 100)
 			      "Hello World!")))))
-	  (draw-block content 20 800 545 700 0))))
+	  (draw-block content 20 800 545 700))))
     (pdf:write-document file)))
 
 ; a multipage simple hello world
@@ -59,7 +63,7 @@
       (loop while (boxes content) do
 	    (pdf:with-page ()
 	      (pdf:set-line-width 0.1)
-	      (draw-block content 20 800 545 700 0))))
+	      (draw-block content 20 800 545 700))))
     (pdf:write-document file)))
 
 ;; The Fancy Example!
@@ -121,7 +125,7 @@
 			    (paragraph (:h-align :justified :top-margin 5 :first-line-indent 10
 						 :font "Times-Italic" :font-size 6.5)
 				       *par1*))
-	      x (- y (dy box)) (- (dy box) 10) (dx box) 90))
+	      x (- y (dy box)) (- (dy box) 10) (dx box) :rotation 90 :border 0.1))
 
 ;; a chart (I will have to change this in cl-pdf: it's a real mess!)
 
@@ -200,9 +204,12 @@
   (link-all-a box x y)
   (link-all-spaces box x y))
   
-;;example document
+;;; Example document
+; you need to load the fonts with something like this:
+;   (pdf:load-t1-font "/tmp/cmex10.afm" "/tmp/cmex10.pfb")
+;   (pdf:load-t1-font "/tmp/cmti10.afm" "/tmp/cmti10.pfb")
 
-(defun ex (&optional (file #P"/tmp/ex.pdf"))
+(defun single-page-example (&optional (file #P"/tmp/ex.pdf"))
   (pdf:with-document ()
     (pdf:with-page ()
       (pdf:with-outline-level ("Example" (pdf:register-page-reference))
@@ -321,7 +328,7 @@
 			    (with-style (:font "Times-Roman" :font-size 10)
 			      "This test now uses a TeX font (cmti10). Note the italic" :eol "correction for the super/subscript of the E."))
 		 (paragraph (:h-align :centered :top-margin 20 :font "Times-Italic" :font-size 18 :color '(0.8 0 0))
-			      "This test pdf file has been typeset " :eol "with cl-typesetting 0.70" :eol
+			      "This test pdf file has been typeset " :eol "with cl-typesetting 0.80" :eol
 			      (vspace 10)
 			      (with-style (:font "Times-Italic" :font-size 14)
 				"Marc Battyani"))
@@ -335,9 +342,153 @@
 			    ))))
 	  (pdf::draw-bar-code128 "CODE128BARCODE" 10 35 :height 25 :width 150 :start-stop-factor 0.25
 				 :font-size 7 :show-string t)
-	  (draw-block content 40 800 250 380 5)
-	  (draw-block content 50 425 250 380 -5)
-	  (draw-block content 330 800 250 380 -2 :special-fn 'link-all-a-and-spaces)
-	  (draw-block content 310 400 250 380 0 :v-align :justified))))
+	  (draw-block content 40 800 250 380 :rotation 5 :border 0.1)
+	  (draw-block content 50 425 250 380 :rotation -5 :border 0.1)
+	  (draw-block content 330 800 250 380 :rotation -2  :border 0.1 :special-fn 'link-all-a-and-spaces)
+	  (draw-block content 310 400 250 380 :v-align :justified :border 0.1))))
     (pdf:write-document file)))
 
+;;; A higher level example
+
+(defun multi-page-example (&optional (file #P"/tmp/multi-page.pdf")
+				     &aux content table (margins '(72 72 72 50)))
+  (with-document ()
+    ;(pdf:set-line-width 0.1)
+   (let* ((print-stamp (multiple-value-bind (second minute hour date month year)
+                           (get-decoded-time)
+                         (format nil "Printed on ~4D-~2,'0D-~2,'0D ~2,'0D:~2,'0D"
+                                 year month date hour minute)))
+          (header (typeset::compile-text ()
+                    (typeset::paragraph (:h-align :centered
+                                         :font "Helvetica-BoldOblique" :font-size 12)
+                      "Multi-page example document")
+                    ;(vspace 1) ;:vfill
+                    (typeset:hrule :dy 1/2)))
+          (footer (lambda (pdf:*page*)
+                    (typeset::compile-text (:font "Helvetica" :font-size 10)
+                      (typeset:hrule :dy 1/2)
+                      (typeset::hbox (:align :center :adjustable-p t)
+                        (typeset::put-source-code-string print-stamp)
+                        ;(typeset::hspace 100)
+                        :hfill
+                        (typeset::put-source-code-string
+                         (format nil "Page ~d"
+                                 (1+ (position pdf:*page* (pages pdf:*document*))))))
+                 ))))
+    (setq content
+          (typeset::compile-text ()
+            (typeset:paragraph (:font "Helvetica-Bold" :font-size 16 :top-margin 20)
+              "1. First paragraph group")
+            (typeset:hrule :dy 2)
+            (dotimes (i 40)
+              (typeset:paragraph (:font "Helvetica" :font-size (+ 6 (random 10)))
+                (put-source-code-string (format nil "1.~d. " (1+ i)))
+                (dotimes (j (1+ (random 5)))
+                  (typeset:put-string "The quick brown fox jumps over the lazy dog. "))))
+            :eop))
+    (draw-pages content :margins margins :header header :footer footer)
+
+    (setq content
+          (typeset::compile-text ()
+            ;(vbox ()
+              (typeset:paragraph (:font "Times-Bold" :font-size 16 :top-margin 20)
+                "2. Second paragraph group"
+              (typeset:hrule :dy 2))
+            (dotimes (i 40)
+              (typeset:paragraph (:font "Times-Roman" :font-size (+ 6 (random 10)))
+                (put-source-code-string (format nil "2.~d. " (1+ i)))
+                (dotimes (j (1+ (random 5)))
+                  (typeset:put-string "The quick brown fox jumps over the lazy dog. "))))
+            
+            (typeset:table (:col-widths '(20 100 100 100) :inline nil :splitable-p nil
+                            :border 0 :background-color '(1 1 0.8))
+              (typeset::row ()
+                (typeset:cell (:col-span 4)
+                  (typeset:paragraph (:h-align :centered
+                                      :font "Times-Italic" :font-size 12)
+                    "Non-splitable table - row with a col-span of 4")))
+              (loop for (name tel age) = (list "Dmitri Dmitriev" "555-1234" (+ 25 (random 25)))
+                    and row-number from 1 upto 4
+                    do
+                    (typeset:row (:height (when (evenp row-number) 20)
+                                  :background-color (if (zerop (mod row-number 3))
+                                                        :red nil))
+                      (typeset:cell () (typeset::put-source-code-string
+                                        (format nil "~d" row-number)))
+                      (typeset:cell (:background-color (when (>= age 40) :blue))
+                        name)
+                      (typeset:cell () tel)
+                      (typeset:cell () (typeset:paragraph (:h-align :right) age)))))
+          ))
+    (draw-pages content :margins margins :header header :footer footer)
+
+    (setq content
+          (typeset:table (:col-widths '(20 100 100 100) :inline t :splitable-p t
+                          :border 1/2 :background-color '(1 1 0.8))
+            (typeset::header-row (:background-color :gray)
+              (typeset:cell (:row-span 2) (typeset::put-source-code-string "Row #"))
+              (typeset:cell (:row-span 2) "Name")
+              (typeset:cell () "Telephone")
+                ;(typeset:table (:col-widths '(100) :inline t :splitable-p nil
+                ;                :padding 0 :border 1/2); :background-color '(1 1 0.8))
+                ;  (typeset:row () (typeset:cell () "Telephone"))
+                ;  (typeset:row () (typeset:cell () "Fax"))))
+              (typeset:cell (:row-span 2) (typeset:paragraph (:h-align :right) "Age")))
+            (typeset::header-row (:background-color :gray)
+               (typeset:cell () "Fax"))
+            (typeset::footer-row (:background-color :gray)
+              (typeset:cell (:col-span 4)
+                (typeset:paragraph (:h-align :centered
+                                    :font "Times-Italic" :font-size 12)
+                  "Table footer with a col-span of 4")))
+            (loop for (name tel age) = (list "Ivan Ivanov" "555-1234" (+ 25 (random 25)))
+                  and row-number from 1 upto 40
+                  do
+                  (typeset:row (:height (when (evenp row-number) 20)
+                                :background-color (if (zerop (mod row-number 3))
+                                                      :red nil))
+                    (typeset:cell () (typeset::put-source-code-string
+                                      (format nil "~d" row-number)))
+                    (typeset:cell (:background-color (when (>= age 40) :blue))
+                                   name)
+                    (typeset:cell () tel)
+                    (typeset:cell () (typeset:paragraph (:h-align :right) age))))))
+    (setq table content)
+    (draw-pages content :margins margins :header header :footer footer) ;:break :after
+    
+    (setq content	;; Various spans
+          (typeset:table (:col-widths '(20 40 60 80 120)
+                          :background-color :yellow :border 1
+                          :inline 1 :splitable-p 1)
+            (typeset::header-row ()
+              (typeset:cell (:col-span 5)
+                (typeset:paragraph (:h-align :centered
+                                    :font "Times-Italic" :font-size 12)
+                  "Table with cells spanning more then one row")))
+            (typeset::row (:background-color :green)
+              (typeset:cell (:row-span 2 :background-color :blue)
+                "1,1 2,1  row-span 2")
+              (typeset:cell () "1,2")
+              (typeset:cell (:col-span 2 :row-span 3 :background-color :red)
+                "1,3 1,4 - 3,3 3,4  col-span 2 row-span 3")
+              (typeset:cell () "1,5"))
+            (typeset::row ()
+              (typeset:cell () "2,2")
+              (typeset:cell (:row-span 2 :background-color :blue) "2,5 3,5  row-span 2"))
+            (typeset::row (:background-color :green)
+              (typeset:cell (:col-span 2) "3,1 3,2  col-span 2"))
+            (typeset::row ()
+              (typeset:cell () "4,1")
+              (typeset:cell () "4,2")
+              (typeset:cell () "4,3")
+              (typeset:cell () "4,4")
+              (typeset:cell () "4,5"))))
+    (draw-pages content :margins margins :header header :footer footer) ;:break :after
+
+    (typeset::draw-block (typeset::compile-text () "Test block - line1" :eol "Line 2")
+                                 300 300 150 150 :border 1))
+   (when pdf:*page* (typeset::finalize-page pdf:*page*))
+    ;(pdf:with-page ()
+     ;(draw-page content :margins 72))
+   (pdf:write-document file))
+  table)

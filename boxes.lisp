@@ -1,5 +1,6 @@
-;;; cl-typesetting copyright 2003 Marc Battyani see license.txt for details of the license
+;;; cl-typesetting copyright 2003-2004 Marc Battyani see license.txt for the details
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
+;;; The homepage of cl-typesetting is here: http://www.fractalconcept.com/asp/html/cl-typesetting.html
 
 (in-package typeset)
 
@@ -175,4 +176,22 @@
 (defmethod adjust-box-dy (box dy baseline)
   nil)
 
+(defgeneric v-split (content dx dy &optional v-align)
+ ;;; Split the content object vertically into two parts
+  ;; Args: dx - area width, dy - area height
+  ;; Values: boxes-fit, boxes-left, dy-left
+ (:method (content dx dy &optional v-align)
+  (declare (ignore dx v-align))
+  (values nil nil dy)))
+
+(defgeneric boxes-left (content))
+
+(defgeneric (setf boxes-left) (value content)
+ (:method (value content)	; Do nothing if has already been adjusted by v-split.
+  (declare (ignore content))
+  value))
+
+(defmethod print-object ((self char-box) stream)
+  (print-unreadable-object (self stream :type t)
+    (prin1 (boxed-char self) stream)))
 

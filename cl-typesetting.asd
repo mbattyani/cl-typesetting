@@ -1,8 +1,8 @@
 ;;;; -*- Mode: LISP; Syntax: ANSI-Common-Lisp; Base: 10 -*-
 
-;;; cl-typesetting copyright 2003 Marc Battyani see license.txt for the details
+;;; cl-typesetting copyright 2003-2004 Marc Battyani see license.txt for the details
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
-;;; The homepage of cl-typesetting is here: http://www.fractalconcept.com/asp/html/cl-cl-typesetting.html
+;;; The homepage of cl-typesetting is here: http://www.fractalconcept.com/asp/html/cl-typesetting.html
 
 (in-package asdf)
 
@@ -29,6 +29,7 @@
 		 (:file "layout" :depends-on ("typo" "graphics"))
 		 (:file "tables" :depends-on ("layout"))
 		 (:file "stroke" :depends-on ("layout"))
-		 (:file "test" :depends-on ("stroke" "tables" "math"))
+		 (:file "top-level" :depends-on ("stroke" "typo"))
+		 (:file "test" :depends-on ("top-level" "tables" "math"))
 		 )
     :depends-on (:cl-pdf))

@@ -1,5 +1,6 @@
-;;; cl-typesetting copyright 2003-2004 Marc Battyani see license.txt for details of the license
+;;; cl-typesetting copyright 2003-2004 Marc Battyani see license.txt for the details
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
+;;; The homepage of cl-typesetting is here: http://www.fractalconcept.com/asp/html/cl-typesetting.html
 
 (in-package typeset)
 
@@ -29,6 +30,7 @@
   (and (pdf:hyphen-char *font*)(char= (pdf:hyphen-char *font*)(boxed-char box))))
 
 ;;This needs a complete rewrite...
+#+nil
 (defmethod split-lines (boxes dx dy &optional (v-align :top))
   (let* ((boxes-left boxes)
 	 (text-lines ())
@@ -104,6 +106,101 @@
 	      ((eq box :eop)
 	       (next-line line-boxes)
 	       (return-lines))
+	      ((<= next-x last-x) (push box line-boxes))
+	      ((and last-cut-point (not (eq box last-cut-point)))
+	       (setf boxes-left last-cut-boxes-left)
+	       (next-line (cons (convert-hyphen-to-char-box last-cut-point)
+				(cdr (member last-cut-point line-boxes)))))
+	      (t (unless line-boxes (error "could not fit anything"))
+	       (next-line line-boxes) (setf boxes-left (cons box boxes-left))))
+	    (setf x next-x)
+	    finally
+	    (when line-boxes (next-line line-boxes)))
+      (return-lines))))
+
+(defmethod v-split ((content text-content) dx dy &optional (v-align :top))
+  (let* ((boxes (boxes content))
+         (boxes-left boxes)
+	 (text-lines ())
+	 (line-boxes ())
+	 (last-cut-point nil)
+	 (last-cut-boxes-left ())
+	 (trimming t)
+	 (last-style (make-instance 'text-style))
+	 (x 0)
+	 (next-x 0)
+	 (last-x dx))
+    (when (member v-align '(:centered :bottom))
+      (push (make-vfill-glue) text-lines))
+    (labels ((return-lines (&optional (dy-left dy))
+	       (when (member v-align '(:centered :top))
+		 (push (make-vfill-glue) text-lines))
+	       (return-from v-split (values (nreverse text-lines)
+                                           (when boxes-left (cons last-style boxes-left))
+                                           dy-left)))
+	     (abort-line ()
+	       (setf boxes-left boxes)
+	       (return-lines))
+	     (init-line ()
+	       (save-style last-style)
+	       (setf line-boxes nil last-cut-point nil last-cut-boxes-left nil
+		     trimming t next-x 0 last-x (- dx *right-margin*)))
+	     (start-line ()
+	       (setf last-x (- dx *right-margin*) trimming nil)
+	       (unless (zerop *left-margin*)
+		 (push (make-instance 'h-spacing :dx *left-margin*) line-boxes)
+		 (incf next-x *left-margin*))
+	       (when (member *h-align* '(:centered :right))
+		 (push (make-hfill-glue) line-boxes)))
+	     (next-line (line-boxes)
+	       (if line-boxes
+		 (let ((text-line (make-instance 'text-line :dx dx :adjustable-p t)))
+		   (setf line-boxes (boxes-left-trim line-boxes))
+		   (when (member *h-align* '(:centered :left))
+		     (push (make-hfill-glue) line-boxes))
+		   (unless (zerop *right-margin*)
+		     (push (make-instance 'h-spacing :dx *right-margin*) line-boxes))
+		   (setf (boxes text-line)(nreverse line-boxes))
+		   (decf dy (dy text-line))
+		   (when (minusp dy) (abort-line))
+		   (setf boxes boxes-left)
+		   (when (and text-lines (not (zerop dy)))
+		     (push (make-inter-line-glue (dy text-line)) text-lines))
+		   (push text-line text-lines))
+		 (setf boxes boxes-left))
+	       (init-line)))
+      (loop for box = (pop boxes-left)
+	    for box-size = (dx box)
+	    while box
+	    do
+	    (setf next-x (+ x box-size))
+	    (when (and (cut-point-p box)(> x 0))
+	      (setf last-cut-point box
+		    last-cut-boxes-left boxes-left))
+	    (when (and trimming (not (trimable-p box))(> box-size 0))
+	      (start-line))
+	    (when (style-p box)
+	      (use-style box))
+	    (cond
+	      ((vmode-p box)
+	       (next-line line-boxes)
+	       (decf dy (dy box))
+	       (when (minusp dy)
+                 ;; Embedded vmode element does not fit - verify for multi-page
+                 (incf dy (dy box))
+                 (push box boxes-left)
+                 (multiple-value-bind (boxes boxes-left dy-left) (v-split box dx dy)
+                   (setf text-lines (revappend boxes text-lines))
+                   (return-lines dy-left)))
+	       (push box text-lines))
+	      ((and trimming (trimable-p box)) nil)
+	      ((eq box :eol)
+	       (when (eq *h-align* :justified)
+		 (push (make-hfill-glue) line-boxes))
+	       (next-line line-boxes))
+	      ((eq box :eop)
+	       (next-line line-boxes)
+	       (return-lines 0))
 	      ((<= next-x last-x) (push box line-boxes))
 	      ((and last-cut-point (not (eq box last-cut-point)))
 	       (setf boxes-left last-cut-boxes-left)
@@ -197,6 +294,25 @@
 	  (subseq boxes start stop)
 	  boxes))))
 
+(defmethod boxes-left ((content text-content))
+  (boxes content))
+
+(defmethod (setf boxes-left) (value (content text-content))
+ ;;; Args: value - can start form a text-style.
+  (setf (boxes content) value))
+
+(defun make-filled-vbox (content dx dy &optional (v-align :top) (advance t))
+ ;;; Args: advance  If true, assign new boxes-left.
+  (with-text-content (content)
+    (multiple-value-bind (boxes boxes-left) (v-split content dx dy v-align)
+      (when boxes
+	(let* ((vbox (make-instance 'vbox  :dx dx :dy dy  :boxes boxes  :fixed-size t)))
+	  (do-layout vbox)
+          (when advance
+            (setf (boxes-left content) boxes-left))
+	  vbox)))))
+
+#+nil
 (defun make-filled-vbox (content dx dy &optional (v-align :top))
   (with-text-content (content)
     (multiple-value-bind (lines boxes-left) (split-lines (boxes content) dx dy v-align)

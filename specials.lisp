@@ -1,5 +1,6 @@
-;;; cl-typesetting copyright 2002 Marc Battyani see license.txt for details of the license
+;;; cl-typesetting copyright 2003-2004 Marc Battyani see license.txt for the details
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
+;;; The homepage of cl-typesetting is here: http://www.fractalconcept.com/asp/html/cl-typesetting.html
 
 (in-package typeset)
 
@@ -52,4 +53,50 @@
 (defmacro with-gensyms ((&rest names) &body body)
   `(let (,@(mapcar (lambda (sym) `(,sym (gensym ,(symbol-name sym)))) names))
      ,@body)))
+
+;;; Quad is construction for specifying values for margins, borders, paddings etc.
+;;; It is represented as
+;;;  - either four-element vector #(left top right bottom),
+;;;  - or four-or-less-element list with defaulting rightmost elements,
+;;;  - or number supplying the same value for all the four components.
+;;; Roughly equivalent to 
+;;;	(destructuring-bind (left &optional (top left) (right left) (bottom top)) quad
+;;; NB: CSS2 assumes different sequence of values: (top right bottom left) !
+(defmacro with-quad ((left &optional top right bottom) quad &body body)
+  (with-gensyms (q)
+   `(let* ((,q ,quad)
+           (,left (cond ((vectorp ,q) (aref ,q 0))
+                        ((consp ,q) (first ,q))
+                        ((prog1 (or ,q 0) (setq ,q nil)))))
+           ,@(when top    `((,top (if (vectorp ,q) (aref ,q 1) (or (second ,q) ,left)))))
+           ,@(when right  `((,right (if (vectorp ,q) (aref ,q 2) (or (third ,q) ,left)))))
+           ,@(when bottom `((,bottom (if (vectorp ,q) (aref ,q 3) (or (fourth ,q) ,top))))) )
+      ,@body)))
+
+(define-condition end-of-page (condition)
+  ((box :initarg :box :reader box :initform nil))
+  (:report (lambda (c stream)
+             (format stream "Unexpected end-of-page during layout or stroking~@[ ~s~]."
+                     (box c)))))
+
+(define-condition cannot-fit-on-page (condition)
+  ((box :initarg :box :reader box :initform nil))
+  (:report (lambda (c stream)
+             (format stream "Unable to fit object~@[ ~s~] even on a new page."
+                     (box c)))))
+
+(defgeneric v-split (content dx dy &optional v-align)
+ ;;; Split the content object vertically into two parts
+  ;; Args: dx - area width, dy - area height
+  ;; Values: boxes-fit, boxes-left, dy-left
+ (:method (content dx dy &optional v-align)
+  (declare (ignore dx v-align))
+  (values nil nil dy)))
+
+(defgeneric boxes-left (content))
+
+(defgeneric (setf boxes-left) (value content)
+ (:method (value content)	; Do nothing if has already been adjusted by v-split.
+  (declare (ignore content))
+  value))
 
