@@ -35,18 +35,12 @@
   (let ((string ())
 	(offset 0)
 	(nb-spaces 0)
-	#+lispworks (notevery-base-char-p nil)
 	text-x text-y
 	(text-chunk ()))
     (labels ((end-string ()
 	       (when string
-		 (push (coerce (nreverse string)
-                               #-lispworks 'string
-                               #+lispworks (if notevery-base-char-p
-                                               'lw:text-string 'string))
-                       text-chunk)
-		 (setf string nil
-		       #+lispworks notevery-base-char-p #+lispworks nil)))
+		 (push (coerce (nreverse string) 'string) text-chunk)
+		 (setf string nil)))
 	     (end-text-chunk ()
 	       (end-string)
 	       (setf nb-spaces 0)
@@ -65,10 +59,8 @@
 	       (unless (or string text-chunk)
 		 (setf text-x x text-y (+ offset y)))
 	       (let ((char (boxed-char char-box)))
-		 (if (find char "\\()" :test #'char=)
-		     (push #\\ string)
-		     #+lispworks (when (not (lw:base-char-p char))
-				   (setf notevery-base-char-p t)))
+		 (when (find char "\\()" :test #'char=)
+		   (push #\\ string))
 		 (push char string)))
 	     (add-spacing (space)
 	       (setf space (round (/ (* -1000 space) *text-x-scale*) *font-size*))

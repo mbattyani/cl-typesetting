@@ -85,18 +85,4 @@
              (format stream "Unable to fit object~@[ ~s~] even on a new page."
                      (box c)))))
 
-(defgeneric v-split (content dx dy &optional v-align)
- ;;; Split the content object vertically into two parts
-  ;; Args: dx - area width, dy - area height
-  ;; Values: boxes-fit, boxes-left, dy-left
- (:method (content dx dy &optional v-align)
-  (declare (ignore dx v-align))
-  (values nil nil dy)))
-
-(defgeneric boxes-left (content))
-
-(defgeneric (setf boxes-left) (value content)
- (:method (value content)	; Do nothing if has already been adjusted by v-split.
-  (declare (ignore content))
-  value))
 

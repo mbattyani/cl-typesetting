@@ -32,7 +32,7 @@
 	(let ((content
 	       (compile-text ()
 			     (vspace 100)
-		 (paragraph (:h-align :centered :font "Helvetica-Bold" :font-size 50 :color '(0.0 0 0.8))
+		 (paragraph (:h-align :center :font "Helvetica-Bold" :font-size 50 :color '(0.0 0 0.8))
 			    "cl-typesetting" :eol
 			    (vspace 2)
 			    (hrule :dy 1)
@@ -50,7 +50,7 @@
     (let ((content
 	   (compile-text ()
 		(vspace 100)
-		(paragraph (:h-align :centered :font "Helvetica-Bold" :font-size 50 :color '(0.0 0 0.8))
+		(paragraph (:h-align :center :font "Helvetica-Bold" :font-size 50 :color '(0.0 0 0.8))
 			   "cl-typesetting" :eol
 			   (vspace 2)
 			   (hrule :dy 1)
@@ -209,14 +209,16 @@
 ;   (pdf:load-t1-font "/tmp/cmex10.afm" "/tmp/cmex10.pfb")
 ;   (pdf:load-t1-font "/tmp/cmti10.afm" "/tmp/cmti10.pfb")
 
-(defun single-page-example (&optional (file #P"/tmp/ex.pdf"))
+(defun single-page-example (&optional (file #P"/tmp/ex.pdf")
+				      (banner-jpg #P"/tmp/banner.jpg")
+				      (fractal-jpg #P"/tmp/fractal.jpg")))
   (pdf:with-document ()
     (pdf:with-page ()
       (pdf:with-outline-level ("Example" (pdf:register-page-reference))
 	(pdf:set-line-width 0.1)
 	(let ((content
 	       (compile-text ()
-		 (paragraph (:h-align :centered :font "Helvetica-Bold" :font-size 30 :color '(0.0 0 0.8))
+		 (paragraph (:h-align :center :font "Helvetica-Bold" :font-size 30 :color '(0.0 0 0.8))
 			    "cl-typesetting" :eol
 			    (vspace 2)
 			    (hrule :dy 1)
@@ -225,31 +227,31 @@
 		 (paragraph (:h-align :justified :top-margin 10 :first-line-indent 10
 				      :font "Times-Italic" :font-size 9)
 			      "This typesetting system's goal is to be an alternative to the TeX typesetting system. It is written in Common Lisp and uses cl-pdf as its backend. This enables it to be powerful, extensible, programmable  and fast. Though it is not considered very difficult, it is already much better than Word...")
-		 (paragraph (:h-align :centered :font "Helvetica-BoldOblique" :font-size 20 :color '(1.0 0 0))
+		 (paragraph (:h-align :center :font "Helvetica-BoldOblique" :font-size 20 :color '(1.0 0 0))
 			    "Now in Color! "
 			    (colored-box :dx 15.0 :dy 15.0 :color "#FFC0C0" :border-width 0.5) " "
 			    (colored-box :dx 15.0 :dy 15.0 :color "#C0FFC0" :border-width 0.5) " "
 			    (colored-box :dx 15.0 :dy 15.0 :color "#C0C0FF" :border-width 0.5))
-		 (paragraph (:h-align :centered :font "Times-Italic" :font-size 12 :color '(0.0 0.6 0.3))
+		 (paragraph (:h-align :center :font "Times-Italic" :font-size 12 :color '(0.0 0.6 0.3))
 			    "With user defined "
 			    (put-rotated-char-string "extensions") :eol
 			    (with-style (:font "Times-Italic" :font-size 11)
 			      "Support for images and functional rules" :eol
-			      (image :file #P"/tmp/banner.jpg" :dx 100 :dy 20)))
+			      (image :file banner-jpg :dx 100 :dy 20)))
 		 (hrule :dy 15 :stroke-fn 'draw-wavelet-rule)
 		 (vspace 3)
 		 (table (:col-widths '(60 80 80) :border 0.5 :background-color '(1 1 0.8)
 				     :cell-padding 1 :padding 2)
 			(row ()
 			     (cell (:background-color '(0.8 1 0.8) :col-span 3)
-				   (paragraph (:h-align :centered :font "Times-Italic" :font-size 12)
+				   (paragraph (:h-align :center :font "Times-Italic" :font-size 12)
 						"Title with a col-span of 3")))
 			(row ()
 			     (cell (:background-color '(0.8 0.8 0.8))
 				   (paragraph (:h-align :left :font "Times-Italic" :font-size 9)
 						"Left aligned"))
 			     (cell (:background-color '(0.8 0.8 0.8))
-				   (paragraph (:h-align :centered :font "Times-Roman" :font-size 9)
+				   (paragraph (:h-align :center :font "Times-Roman" :font-size 9)
 						"Centered cell content"))
 			     (cell (:background-color '(0.8 0.8 0.8))
 				   (paragraph (:h-align :right :font "Times-Bold" :font-size 9)
@@ -258,9 +260,9 @@
 			     (cell ()(paragraph (:h-align :left :font "Times-Italic" :font-size 9)
 						"This cell content should take three lines."))
 			     (cell (:background-color '(1 1 1))
-				   (paragraph (:h-align :centered :font "Times-Italic" :font-size 9)
+				   (paragraph (:h-align :center :font "Times-Italic" :font-size 9)
 						"A jpeg "
-						(image :file #P"/tmp/fractal.jpg" :dx 15 :dy 15 :inline t
+						(image :file fractal-jpg :dx 15 :dy 15 :inline t
 						       :offset 9)
 						" in the text"))
 			     (cell ()(paragraph (:h-align :left :font "Times-Italic" :font-size 11)
@@ -283,7 +285,7 @@
 			    *par1*)
 		 (vspace 10)
 		 (user-drawn-box :dx 210 :dy 100 :stroke-fn 'user-drawn-demo) :eol
-		 (paragraph (:h-align :centered :font "Times-Italic" :font-size 8 :top-margin 5)
+		 (paragraph (:h-align :center :font "Times-Italic" :font-size 8 :top-margin 5)
 			    "An example of using cl-typesetting in an user-drawn box.")
 		 (paragraph (:h-align :left :top-margin 15
 				      :left-margin 5 :right-margin 5 :font "courier" :font-size 8)
@@ -294,24 +296,24 @@
    (pdf:set-font *font* *font-size*)
    (pdf:set-text-x-scale (* *text-x-scale* 100))
    (pdf:show-char (boxed-char box))))"))
-		 (paragraph (:h-align :centered :font "Times-Italic" :font-size 8 :top-margin 3)
+		 (paragraph (:h-align :center :font "Times-Italic" :font-size 8 :top-margin 3)
 			    "An example of verbatim code.")
 		 (paragraph (:h-align :justified :top-margin 9 :font "Helvetica-Oblique"
 				      :left-margin 5 :right-margin 5 
 				      :font-size 9 :first-line-indent 20)
 			   *par1*)
 		 (user-drawn-box :dx 240 :dy 100 :stroke-fn 'draw-pie) :eol
-		 (paragraph (:h-align :centered :font "Times-Italic" :font-size 8)
+		 (paragraph (:h-align :center :font "Times-Italic" :font-size 8)
 			    "An example of cl-pdf pie chart inserted.")
 		 (paragraph (:h-align :justified :top-margin 9 :font "helvetica" :font-size 9
 				      :left-margin 40 :right-margin 40)
 			    *par2*)
 		 (vspace 10)
-		 (paragraph (:h-align :centered :top-margin 20 :font "Times-Bold" :font-size 20)
+		 (paragraph (:h-align :center :top-margin 20 :font "Times-Bold" :font-size 20)
 			    "Kerning test" :eol
 			    (with-style (:font "Helvetica" :font-size 40 :left-margin 20 :right-margin 20)
 			      "Yes, AWAY"))
-		 (paragraph (:h-align :centered :top-margin 10 :font "CMTI10"
+		 (paragraph (:h-align :center :top-margin 10 :font "CMTI10"
 				      :font-size 16 :color '(0 0 0))
 			    (with-style (:font "Times-Bold" :font-size 20)
 			      "Basic Math Mode Test" :eol)
@@ -327,7 +329,7 @@
 			    (vspace 5)
 			    (with-style (:font "Times-Roman" :font-size 10)
 			      "This test now uses a TeX font (cmti10). Note the italic" :eol "correction for the super/subscript of the E."))
-		 (paragraph (:h-align :centered :top-margin 20 :font "Times-Italic" :font-size 18 :color '(0.8 0 0))
+		 (paragraph (:h-align :center :top-margin 20 :font "Times-Italic" :font-size 18 :color '(0.8 0 0))
 			      "This test pdf file has been typeset " :eol "with cl-typesetting 0.80" :eol
 			      (vspace 10)
 			      (with-style (:font "Times-Italic" :font-size 14)
@@ -335,7 +337,7 @@
 		 :vfill
 		 (hrule :dy 20 :stroke-fn 'draw-wavelet-rule :color '(0.8 0 0))
 		 :vfill
-		 (paragraph (:h-align :centered :font "Helvetica-Oblique" :font-size 8)
+		 (paragraph (:h-align :center :font "Helvetica-Oblique" :font-size 8)
 			    "This project needs contributors. So if you are interested contact "
 			    (with-style (:font "Times-Italic" :font-size 9)
 			      "marc.battyani@fractalconcept.com") "."
@@ -359,7 +361,7 @@
                          (format nil "Printed on ~4D-~2,'0D-~2,'0D ~2,'0D:~2,'0D"
                                  year month date hour minute)))
           (header (typeset::compile-text ()
-                    (typeset::paragraph (:h-align :centered
+                    (typeset::paragraph (:h-align :center
                                          :font "Helvetica-BoldOblique" :font-size 12)
                       "Multi-page example document")
                     ;(vspace 1) ;:vfill
@@ -404,7 +406,7 @@
                             :border 0 :background-color '(1 1 0.8))
               (typeset::row ()
                 (typeset:cell (:col-span 4)
-                  (typeset:paragraph (:h-align :centered
+                  (typeset:paragraph (:h-align :center
                                       :font "Times-Italic" :font-size 12)
                     "Non-splitable table - row with a col-span of 4")))
               (loop for (name tel age) = (list "Dmitri Dmitriev" "555-1234" (+ 25 (random 25)))
@@ -438,7 +440,7 @@
                (typeset:cell () "Fax"))
             (typeset::footer-row (:background-color :gray)
               (typeset:cell (:col-span 4)
-                (typeset:paragraph (:h-align :centered
+                (typeset:paragraph (:h-align :center
                                     :font "Times-Italic" :font-size 12)
                   "Table footer with a col-span of 4")))
             (loop for (name tel age) = (list "Ivan Ivanov" "555-1234" (+ 25 (random 25)))
@@ -462,7 +464,7 @@
                           :inline 1 :splitable-p 1)
             (typeset::header-row ()
               (typeset:cell (:col-span 5)
-                (typeset:paragraph (:h-align :centered
+                (typeset:paragraph (:h-align :center
                                     :font "Times-Italic" :font-size 12)
                   "Table with cells spanning more then one row")))
             (typeset::row (:background-color :green)

@@ -216,8 +216,8 @@
 		(add-box (make-char-box char))
 		(add-box (make-inter-char-glue))))))))
 
-;;; put a source code string: no kerning, no hyphenation, significant whitespaces, significant returns
-(defun put-source-code-string (string)
+;;; put a string in a 'verbatim' way: no kerning, no hyphenation, significant whitespaces, significant newlines
+(defun verbatim (string)
   (when (stringp string)
     (loop for char across string
 	  for i from 0
