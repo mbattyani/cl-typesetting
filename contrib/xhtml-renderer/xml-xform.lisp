@@ -159,6 +159,18 @@ for elements and attributes. Example: (\"foo\" . \"http://namespace\")
   ;;(adjoin '("sect;" #\#) xmls::*entities* :test #'equal))
   ;;setq xmls::*entities*
   ;;(adjoin '("nbsp;" #\Space) xmls::*entities* :test #'equal))
+  (setq xmls::*entities*
+	(concatenate 'vector
+		     '(("AElig;" #\?)
+		       ("sect;" #\#)
+		       ("nbsp;" #\Space)
+		       ("#8211;" #\-)
+		       ("#8217;" #\')
+		       ("#8219;" #\`)
+		       ("#8220;" #\")
+		       ("#8221;" #\")
+		       ("#8230;" #\?))
+		     xmls::*entities*))
   (with-open-file (s file)
    (let ((xml (xmls:parse s :compress-whitespace nil)))
      (xml-xform #'attr-list-to-assoc xml))))
@@ -255,12 +267,6 @@ for elements and attributes. Example: (\"foo\" . \"http://namespace\")
 
 ;; The XHTML style sheet
 
-(defvar *font-normal* "Times-Roman")
-(defvar *font-bold* "Times-Bold")
-(defvar *font-italic* "Times-Italic")
-(defvar *font-bold-italic* "Times-BoldItalic")
-(defvar *font-monospace* "Courier")
-
 (defun typeset-elem-xform (node parents)
   (let ((elem (xml-elem node))
 	(attr (xml-attr node))
@@ -268,10 +274,10 @@ for elements and attributes. Example: (\"foo\" . \"http://namespace\")
 
     ;; Deal with each element recursively.
     (case elem
-      ((:html) `(with-style () ,@clst))
+      ((:html) (apply #'append (remove-if #'stringp clst)))
       
-      ((:head) `(set-contextual-variable :title
-		 ,(xml-extract-text (xml-subtree '(:title) node))))
+      ((:head) `((set-contextual-variable :title
+		  ,(xml-extract-text (xml-subtree '(:title) node)))))
       
       ;; need to preserve :title for :head to work on, due to
       ;; depth-first search
@@ -282,18 +288,14 @@ for elements and attributes. Example: (\"foo\" . \"http://namespace\")
       ((:body)
        (if (> *toc-depth* 0)
 	   (let ((toc (remove-if #'null (make-toc))))
-	     (setf *chapter-nums* nil)
-	     (setq *chapters* nil)
-	     `(with-style (:font *font-normal* :font-size 10)
-	       (set-contextual-variable :header-enabled t)
+	     `((set-contextual-variable :header-enabled t)
 	       (set-contextual-variable :footer-enabled t)
 	       (mark-ref-point '(:chapter 0) :data "Table of Contents")
 	       ,@toc
 	       :fresh-page
 	       ,@clst
 	       (mark-ref-point "DocumentEnd")))
-	   `(with-style (:font *font-normal* :font-size 10)
-	     ,@clst
+	   `(,@clst
 	     (mark-ref-point "DocumentEnd"))))
       
       ((:a)
@@ -307,51 +309,21 @@ for elements and attributes. Example: (\"foo\" . \"http://namespace\")
 	     (append1 out
 		      (if (eql #\# (aref href 0))
 			  `(put-string (format nil " (page ~D)"
-					(find-ref-point-page-number ,(subseq href 1))))
+					(find-ref-point-page-number
+					 ,(subseq href 1))))
 			  `(with-style ()
 			    " ("
 			    (with-style (:color :blue)
 			      (put-string ,href))
 			    ")"))))
 	 `(with-style () ,@out)))
-      
-      ((:h1)
-       `(with-style ()
-	 :fresh-page
-	 (paragraph (:font "Helvetica-Bold" :font-size 20
-			   :top-margin 14 :bottom-margin 10)
-	   (apply #'mark-ref-point ',(chp-ref 0 (xml-extract-text node)))
-	   ,@clst)))
-      
-      ((:h2)
-       `(paragraph (:font "Helvetica-BoldOblique"
-		    :font-size 18 :top-margin 10 :bottom-margin 8) 
-	 (apply #'mark-ref-point ',(chp-ref 1 (xml-extract-text node)))
-	 ,@clst))
-      
-      ((:h3)
-       `(paragraph (:font "Helvetica-Bold" :font-size 16
-		    :top-margin 10 :bottom-margin 8) 
-	 (apply #'mark-ref-point ',(chp-ref 2 (xml-extract-text node)))
-	 ,@clst))
-      
-      ((:h4)
-       `(paragraph (:font "Helvetica-BoldOblique" :font-size 14
-		    :top-margin 10 :bottom-margin 8)
-	 (apply #'mark-ref-point ',(chp-ref 3 (xml-extract-text node)))
-	 ,@clst))
-      
-      ((:h5)
-       `(paragraph (:font "Helvetica-Bold" :font-size 12
-		    :top-margin 10 :bottom-margin 8)
-	 (apply #'mark-ref-point ',(chp-ref 4 (xml-extract-text node)))
-	 ,@clst))
-      
-      ((:h6)
-       `(paragraph (:font "Helvetica-BoldOblique" :font-size 12
-		    :top-margin 10 :bottom-margin 8) 
-	 (apply #'mark-ref-point ',(chp-ref 5 (xml-extract-text node)))
-	 ,@clst))
+
+      ((:h1) (chapter-markup 0 (xml-extract-text node) clst))
+      ((:h2) (chapter-markup 1 (xml-extract-text node) clst))
+      ((:h3) (chapter-markup 2 (xml-extract-text node) clst))
+      ((:h4) (chapter-markup 3 (xml-extract-text node) clst))
+      ((:h5) (chapter-markup 4 (xml-extract-text node) clst))
+      ((:h6) (chapter-markup 5 (xml-extract-text node) clst))
       
       ((:p)
        `(paragraph (:font *font-normal* :font-size 10
@@ -506,20 +478,23 @@ for elements and attributes. Example: (\"foo\" . \"http://namespace\")
       ;;   + This is some <b>bold text</b>
       ;; ->
       ;;     This is <ins-start />some <b>bold <ins-end />text</b>
-
+      
       ((:ins-start)
-       `(set-style (:pre-decoration
-		    #'decoration-green-background)
+       `(with-style ()
+	 (set-contextual-style (:pre-decoration
+			      #'decoration-green-background))
 	 (change-start-insert)))
       
       ((:del-start)
-       `(set-style (:post-decoration
-		    #'decoration-strikethrough)
+       `(with-style ()
+	 (set-contextual-style (:post-decoration
+			       #'decoration-strikethrough))
 	 (change-start-delete)))
       
       ((:ins-end :del-end)
-       `(set-style (:pre-decoration :none
-		    :post-decoration :none)
+       `(with-style ()
+	 (set-contextual-style (:pre-decoration :none
+			       :post-decoration :none))
 	 (change-end)))
 
       ;; Unknown item: insert bright and ugly complaint
@@ -530,12 +505,15 @@ for elements and attributes. Example: (\"foo\" . \"http://namespace\")
 
 ;;; high-level functions
 
+(defun load-xml-file-xform (input)
+  (xml-xform #'xml-collapse-whitespace
+	     (xml-xform #'xml-collapse-sxml-namespace
+			(load-xml-file input))))
+
 (defun xhtml-to-typeset (input)
   "Read XML input file and transform to typesetting instructions"
   ;; First some cleanup on the input XML file
-  (let ((tree (xml-xform #'xml-collapse-whitespace
-			 (xml-xform #'xml-collapse-sxml-namespace
-				    (load-xml-file input)))))
+  (let ((tree (load-xml-file-xform input)))
     ;; Generate table of contents
     #-(and) (setq *chapters* (mapcar (lambda (h)
 			       (xml-extract-text h))

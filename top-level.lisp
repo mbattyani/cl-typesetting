@@ -156,7 +156,8 @@
       (funcall finalize-fn pdf:*page*))
     (when get-content
       (setf (pdf::content (pdf::content-stream pdf:*page*))
-	    (get-output-stream-string pdf::*page-stream*))))
+	    (get-output-stream-string pdf::*page-stream*))
+      (pdf::compress-pdf-stream (pdf::content-stream pdf:*page*))))
   pdf:*page*)
 
 (defmethod draw-block (content x y dx dy 
