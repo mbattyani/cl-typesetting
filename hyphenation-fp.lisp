@@ -19,6 +19,16 @@
 
 (in-package nix)
 
+(defvar *cl-typesetting-base-directory*
+   (make-pathname :name nil :type nil :version nil
+     :defaults #.(or #-gcl *compile-file-truename* *load-truename*))
+   "The base directory for cl-typesetting source and auxiliary data")
+
+(defvar *hyphen-patterns-directory*
+  (merge-pathnames (make-pathname :name nil :type nil :version nil
+                                  :directory '(:relative "hyphen-patterns"))
+                   *cl-typesetting-base-directory*))
+
 (defvar *language-hyphen-file-list*
   '((:british        . "gbhyph")
     (:german-new     . "dehyphn")
@@ -29,15 +39,6 @@
     (:foo            . "foo")
     )
   )
-
-(defvar *cl-typesetting-base-directory*
-  (make-pathname :name nil :type nil :version nil
-                 :defaults (parse-namestring *load-truename*)))
-
-(defvar *hyphen-patterns-directory*
-  (merge-pathnames (make-pathname :name nil :type nil :version nil
-                                  :directory '(:relative "hyphen-patterns"))
-                   *cl-typesetting-base-directory*))
 
 ;; An hyphenation object is able to return the list
 ;; of hyphenation points for any word according to

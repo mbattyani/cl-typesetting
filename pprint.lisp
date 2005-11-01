@@ -16,14 +16,20 @@
 (defparameter *pp-comment-decoration* '("courier" (0.2 0.2 0.6)))
 (defparameter *pp-symbol-decoration-table* (make-hash-table))
 
+(defparameter *exceptions* '())
+
 (defun add-symbol-decoration (symbol decoration)
   (setf (gethash symbol *pp-symbol-decoration-table*) decoration))
 
-(loop for (symbol . decoration) in '((defvar "courier-bold" (0.0 0.0 0.5))
-                                     (defun "courier-bold" (0.0 0.2 0.5))
-                                     (defmethod "courier-bold" (0.0 0.2 0.5)))
-      do (add-symbol-decoration symbol decoration))
+;(loop for (symbol . decoration) in '((defvar "courier-bold" (0.0 0.0 0.5))
+;                                     (defun "courier-bold" (0.0 0.2 0.5))
+;                                     (defmethod "courier-bold" (0.0 0.2 0.5)))
+;      do (add-symbol-decoration symbol decoration))
 
+(loop for symbol being the external-symbols of 'common-lisp
+      when (eql (search "DEF" (symbol-name symbol)) 0)
+      do (add-symbol-decoration symbol '("courier-bold" (0.0 0.2 0.5))))
+                    
 (defun split-comment (line)
   (let ((comment-pos (position #\; line)))
     (if comment-pos
@@ -69,7 +75,12 @@
               (push (list* trimmed end *pp-string-decoration*) decorations))
              ((gethash obj *pp-symbol-decoration-table*)
               (push (list* trimmed end (gethash obj *pp-symbol-decoration-table*)) decorations))
-             ((and (symbolp obj)(eq (symbol-package obj) cl-package))
+             ((and (symbolp obj)
+                   (or (eq (symbol-package obj) cl-package)
+                       (member (symbol-name obj)
+                               '("FOR" "THEN" "WHILE" "COLLECT" "IN" "WITH" "FINALLY")
+                               :test #'string=))
+                   (not (member (symbol-name obj) *exceptions* :test #'string=)))
               (push (list* trimmed end *pp-common-lisp-decoration*) decorations)))
        (setf start end))
       (setf start 0)
@@ -83,7 +94,7 @@
             (setf start end-tok))
       (with-text-compilation 
         (when (< start length)
-          (verbatim (subseq line start)))
+          (verbatim (subseq code start)))
         (with-style (:font (first *pp-comment-decoration*)
                            :font-size *pp-font-size*
                            :color (second *pp-comment-decoration*))
@@ -113,7 +124,7 @@
    (with-output-to-string (s)
      (pprint sexpr s))))
 
-(defun pprint-lisp-file (lisp-code pdf-file &optional title)
+(defun pprint-lisp-file (lisp-code pdf-file &optional title *exceptions*)
   (with-document ()
     (let* ((margins '(30 50 30 50))
            (print-stamp (multiple-value-bind (second minute hour date month year)

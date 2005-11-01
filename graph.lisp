@@ -5,7 +5,8 @@
 (in-package typeset)
 
 ;(defparameter *dot-command* "dot -Tps ~s -o ~s")
-(defparameter *dot-command* "dot -Tplain-ext ~s -o ~s")
+(defparameter *dot-command* "dot")
+(defparameter *dot-command-args* '("-Tplain-ext"))
 (defparameter *graph-file-prefix* "/tmp/")
 (defparameter *arrow-width* 2)
 (defparameter *arrow-length* 6)
@@ -112,7 +113,9 @@ edge [fontname=~a,fontsize=~a];
 	  (pdf:name *edge-label-font*) *edge-label-font-size*)
   (loop for (rank-constraint . nodes) in (rank-constraints graph) do
 	(format s "{rank = ~a; ~{~s;~^ ~}};~%" rank-constraint (mapcar 'id nodes)))
+  (format s "graph [")
   (gen-dot-attributes s (dot-attributes graph))
+  (format s "];")
   (iter (for (id node) in-hashtable (nodes graph))
 	(gen-graph-dot-data node s))
   (iter (for (id edge) in-hashtable (edges graph))
@@ -172,7 +175,8 @@ edge [fontname=~a,fontsize=~a];
 	 (progn
 	   (with-open-file (s dot-file :direction :output :if-exists :supersede)
 	     (gen-graph-dot-data graph s))
- #+lispworks (sys:call-system (format nil *dot-command* dot-file result-file) :wait t)
+#+lispworks (sys:call-system (format nil "~a~{ ~s~} ~s -o ~s" *dot-command* *dot-command-args* dot-file result-file) :wait t)
+#+(or cmu sbcl) (ext:run-program *dot-command* `(,@*dot-command-args* ,dot-file "-o" ,result-file) :wait t)
 	   (with-open-file (s result-file :direction :input)
 	     (iter (for line = (read-line s nil))
 		   (while line)

@@ -7,7 +7,7 @@
 
 (in-package typeset)
 
-(defconstant +paper-sizes+	; In portrait orientation: (width . height) 
+(defconstant* +paper-sizes+	; In portrait orientation: (width . height) 
   '((:A3 . (841 . 1190))	; (841.89 . 1190.55)
     (:A4 . (595 . 841))		; (595.28 . 841.89)
     (:A5 . (420 . 595))		; (420.94 . 595.28)

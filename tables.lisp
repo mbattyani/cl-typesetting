@@ -24,7 +24,10 @@
    ;; of the containing row) and tighten the width of its content box.
    ;; Hence, they participate in the calculation of total row or table height,
    ;; but do not increase column width.
-   (border :accessor border :initform nil :initarg :border)))
+   ;; If is symbol, has special mening: 
+   ;; - T (default) means "inherit" from table (or row?),
+   ;; - NIL, displays no additional border and even supresses the table border.
+   (border :accessor border  :initform t  :initarg :border)))
 
 (defclass table-row ()
   ((height :accessor height :initform nil :initarg :height)
@@ -34,7 +37,7 @@
 
 (defclass table (box v-mode-mixin)
   ((cols-widths :accessor col-widths :initform nil :initarg :col-widths)
-   (h-align :accessor h-align :initform :top :initarg :h-align)
+   (h-align :accessor h-align :initform :left :initarg :h-align)
    (splittable-p :accessor splittable-p :initform t :initarg :splittable-p)
    (border :accessor border :initform 1 :initarg :border)
    (border-color :accessor border-color :initform '(0 0 0) :initarg :border-color)
@@ -108,12 +111,12 @@
           and row-span = (row-span cell)
           and cell-border = (border cell)
           for cell-borders-width 
-              = (cond ((null cell-border) 0)
+              = (cond ((symbolp cell-border) 0)
                       ((numberp cell-border) (+ cell-border cell-border))
                       ((with-quad (left-border nil right-border) cell-border
                          (+ left-border right-border))))
           and cell-borders-height
-              = #1=(cond ((null cell-border) 0)
+              = #1=(cond ((symbolp cell-border) 0)
                          ((numberp cell-border) (+ cell-border cell-border))
                          ((with-quad (left-border top-border nil bottom-border) cell-border
                             (+ top-border bottom-border))))
@@ -224,28 +227,32 @@
 				      and do (setf height 0 rows nil))
 	      with rows-remaining = (rows table)
 	      
+              ;; Do not count the bottom table padding in available-height.
 	      for (group-height . rows) in row-groups
 	      while (<= (+ current-height group-height) available-height)
-	      
 	      do (dolist (r rows)
 		   (push r fitted-rows)
 		   (pop rows-remaining))
-	      (incf current-height group-height)
+             (incf current-height group-height)
 	      
-	      finally
-	      (when fitted-rows
-		;(setq boxes (append header  footer)) ; DI 2004-Sep-21: not needed any longer
-		;; reduce rows to output
-		(setf (rows table) rows-remaining)
-		;; reduce space required by table (don't subtract header/footer)
-		(decf (dy table) current-height)
-		(return (values (make-instance 'split-table :rows (nreverse fitted-rows)
-					       :original-table table
-					       :dx (dx table)
-					       :dy (+ current-height header&footer-height))
-				table
-				(- dy current-height header&footer-height))))
-	      (return (values nil table dy))))
+           finally (return
+                       (if fitted-rows
+                           (let ((height (+ current-height header&footer-height)))
+                             ;; for split-table height, take bottom padding into account
+                             (incf height (min padding (- available-height height)))
+                             ;; reduce rows to output
+                             (setf (rows table) rows-remaining)
+                             ;; reduce space required by the rest of the table subtracting
+                             ;; neither top border nor bottom table padding
+                             ;; nor header/footer
+                             (decf (dy table) (- current-height border padding))
+                             (values (make-instance 'split-table
+                                                    :rows (nreverse fitted-rows)
+                                                    :original-table table
+                                                    :dx (dx table)  :dy height)
+                                     table
+                                     (- dy height)))
+                           (values nil table dy)))))
       (values nil table dy)))
 
 (defun multi-line (points widths)
@@ -299,7 +306,8 @@
 	                ;; Set translation while counting both table border and padding,
                         ;; but neither cell-border nor cell-padding.
                         (pdf:translate cell-x row-y)
-                        (pdf:with-saved-state		; first, fill background
+		        ;; First, fill background
+                        (pdf:with-saved-state
                           (let ((background-color (or (background-color cell)
                                                       (background-color row))))
                             (when background-color
@@ -315,7 +323,8 @@
                                             (+ width full-size-offset)
                                             (- (+ height full-size-offset)))
                             (pdf:stroke))
-                          (when cell-border		; last, draw cell border
+		          ;; Last, draw additional cell border
+                          (unless (symbolp cell-border)
                             (pdf:set-gray-stroke 0)
                             (with-quad (left-border top-border right-border bottom-border)
                                 cell-border
@@ -404,7 +413,7 @@
      (tt:table (:col-widths '(20 40 60 80 120) :background-color :yellow :border 1)
        (tt:header-row ()
          (tt:cell (:col-span 5)
-           (tt:paragraph (:h-align :centered :font-size 12)
+           (tt:paragraph (:h-align :center :font-size 12)
              "Table with cells spanning more then one row or column")))
        (tt:row (:background-color :green)
          (tt:cell (:row-span 2 :background-color :blue)

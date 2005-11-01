@@ -285,9 +285,10 @@
 ;   (pdf:load-t1-font "/tmp/cmex10.afm" "/tmp/cmex10.pfb")
 ;   (pdf:load-t1-font "/tmp/cmti10.afm" "/tmp/cmti10.pfb")
 
-(defun full-example (&optional (file #P"/tmp/ex.pdf")
-			       (banner-jpg #P"/tmp/banner.jpg")
-			       (fractal-jpg #P"/tmp/fractal.jpg"))
+(defun full-example (&key (file #P"/tmp/ex.pdf")
+                     (banner-jpg #P"/tmp/banner.jpg")
+                     (fractal-jpg #P"/tmp/fractal.jpg")
+                     display-graphs)
   (with-document ()
     (pdf:with-page ()
       (pdf:with-outline-level ("Table of Content" (pdf:register-page-reference))
@@ -490,14 +491,18 @@
 			     (vspace 20)
 			     "In the first graph example below, the nodes contain only strings.")
 		  (vspace 20)
-		  :hfill (graph-box (gen-box-graph)) :hfill
+		  :hfill (if display-graphs 
+                             (graph-box (gen-box-graph))
+                             (with-style (:color '(0.0 0 0.8)) "display-graphs is nil")) :hfill
 		  (paragraph (:h-align :center :font "Times-Italic" :font-size 11)
 			     "The class hierarchy for the boxes in cl-typesetting.")
 		  (vspace 20)
 		  (paragraph (:h-align :justified :font "helvetica" :font-size 12)
 			     "In the next graph, each node contains a full cl-typesetting layout. All the cl-typesetting features can be used in a node, even another graph.")
 		  (vspace 20)
-		  :hfill (graph-box (gen-color-graph)) :hfill
+		  :hfill (if display-graphs 
+                             (graph-box (gen-color-graph))
+                             (with-style (:color '(0.0 0 0.8)) "display-graphs is nil")) :hfill
 		  (paragraph (:h-align :center :font "Times-Italic" :font-size 11)
 			     "The primary colors"))))
 	  (draw-block content 30 810 530 780))))
@@ -685,3 +690,34 @@
                (draw-block content 20 800 545 700))))
      (pdf:write-document file)))
 
+;;; Unicode test
+
+(defparameter *unicode-test-string*
+  (map (unicode-string-type) 'code-char
+    '(8252 8319 8359 8592 8593 8594 8595 8596 8597 8616 915 920 934 945 948 949 963 964 966 32
+      9554 9555 9556 9557 9558 9559 9560 9561 9562 9563 9564 9565 9566 9567 32 65
+      9568 9650 9658 9660 9668 9675 9688 9689 8364 1027 8218 402 8222 8230 8224 8225 32 66
+      372 373 374 375 383 506 507 508 509 510 511 903 913 914 916 917 918 919 921 922 923 32
+      946 947 950 951 952 953 954 955 956 957 958 1101 1102 1103 1105 1106 1107 1108 32
+      1475 1488 1489 1490 1491 1492 1493 64304 64305 64306 64307 64308 64309 32
+      7911 7912 7913 7914 7915 7916 7917 7918 1179 1180 1181 1186 1187 1198 1199 1200 32)))
+
+(defun unicode-hello (&optional (file #P"/tmp/hello-u.pdf"))
+  (pdf:with-document ()
+    (pdf:with-page ()
+      (pdf:with-outline-level ("Unicode Example" (pdf:register-page-reference))
+	(pdf:set-line-width 0.1)
+	(let ((content
+	       (compile-text ()
+			     (vspace 100)
+		 (paragraph (:h-align :center :font "Helvetica-Bold" :font-size 50 :color '(0.0 0 0.8))
+			    "cl-typesetting" :eol
+			    (vspace 2)
+			    (hrule :dy 1)
+			    (with-style (:font "Times-Italic" :font-size 26)
+			      "The cool Common Lisp typesetting system")
+			    (vspace 50)
+			    (with-style (:font "TimesNewRomanPSMT" :font-size 36)
+			      (put-string *unicode-test-string*))))))
+	  (draw-block content 20 800 545 700))))
+    (pdf:write-document file)))

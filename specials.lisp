@@ -104,3 +104,15 @@
              (format stream "Unable to fit object~@[ ~s~] even on a new page."
                      (box c)))))
 
+(defmacro defconstant* (name value &optional doc)
+  `(defconstant ,name
+                (if (boundp ',name) (symbol-value ',name) ,value)
+                ,@(when doc (list doc))))
+
+;;; The string type to use for unicode characters
+
+(defmacro unicode-string-type ()
+  #+lispworks ''lispworks:simple-text-string
+  #-(or lispworks) ''string)
+
+
