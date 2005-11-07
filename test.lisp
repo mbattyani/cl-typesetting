@@ -693,7 +693,7 @@
 ;;; Unicode test
 
 (defparameter *unicode-test-string*
-  (map (unicode-string-type) 'code-char
+  (map unicode-string-type 'code-char
     '(8252 8319 8359 8592 8593 8594 8595 8596 8597 8616 915 920 934 945 948 949 963 964 966 32
       9554 9555 9556 9557 9558 9559 9560 9561 9562 9563 9564 9565 9566 9567 32 65
       9568 9650 9658 9660 9668 9675 9688 9689 8364 1027 8218 402 8222 8230 8224 8225 32 66
@@ -702,6 +702,7 @@
       1475 1488 1489 1490 1491 1492 1493 64304 64305 64306 64307 64308 64309 32
       7911 7912 7913 7914 7915 7916 7917 7918 1179 1180 1181 1186 1187 1198 1199 1200 32)))
 
+;; Look at the unicode-readme.txt in cl-pdf to see how to load unicode fonts
 (defun unicode-hello (&optional (file #P"/tmp/hello-u.pdf"))
   (pdf:with-document ()
     (pdf:with-page ()

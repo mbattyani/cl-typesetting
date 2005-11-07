@@ -54,7 +54,7 @@
 	(text-chunk ()))
     (labels ((end-string ()
 	       (when string
-		 (push (coerce (nreverse string) (unicode-string-type)) text-chunk)
+		 (push (coerce (nreverse string) unicode-string-type) text-chunk)
 		 (setf string nil)))
 	     (end-text-chunk ()
 	       (end-string)

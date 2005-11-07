@@ -316,7 +316,7 @@
                                               (+ width full-size-offset)
                                               (- (+ height full-size-offset)))
                               (pdf:fill-path)))
-                          (unless (zerop border)	; next, draw table border
+                          (unless (or (zerop border) (null cell-border)) ; next, draw table border
                             (pdf:set-line-width border)
                             (pdf:set-gray-stroke 0)
                             (pdf:basic-rect (- half-border) half-border ;0 0

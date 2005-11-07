@@ -111,8 +111,9 @@
 
 ;;; The string type to use for unicode characters
 
-(defmacro unicode-string-type ()
-  #+lispworks ''lispworks:simple-text-string
-  #-(or lispworks) ''string)
-
+(define-symbol-macro  unicode-string-type
+  #+lispworks 'lispworks:simple-text-string
+  #+sbcl 'simple-string
+  #+(or allegro clisp) 'simple-base-string
+  #-(or lispworks sbcl clisp allegro) 'string)
 
