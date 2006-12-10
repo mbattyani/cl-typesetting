@@ -2,10 +2,11 @@
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
 ;;; The homepage of cl-typesetting is here: http://www.fractalconcept.com/asp/html/cl-typesetting.html
 
-(in-package "CL-USER")
+(in-package :cl-user)
 
-(defpackage typeset
-  (:use common-lisp iterate)
+(defpackage :typeset
+  (:nicknames :cl-typesetting)
+  (:use :common-lisp :iterate)
   (:nicknames tt)
   (:export
    #:with-text-content #:with-document #:compile-text #:draw-pages #:finalize-page

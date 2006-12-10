@@ -4,7 +4,7 @@
 
 ;;; Thanks to Dmitri Ivanov for the splittable tables!
 
-(in-package typeset)
+(in-package #:typeset)
 
 (defvar *table* nil)
 

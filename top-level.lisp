@@ -5,7 +5,7 @@
 ;;; Toplevel document and page layout, auto splitting
 ;;; Thanks to Dmitri Ivanov for this!
 
-(in-package typeset)
+(in-package #:typeset)
 
 (defconstant* +paper-sizes+	; In portrait orientation: (width . height) 
   '((:A3 . (841 . 1190))	; (841.89 . 1190.55)

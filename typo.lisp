@@ -2,7 +2,7 @@
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
 ;;; The homepage of cl-typesetting is here: http://www.fractalconcept.com/asp/html/cl-typesetting.html
 
-(in-package typeset)
+(in-package #:typeset)
 
 (defclass style ()
   ((name :accessor name :initform nil)))
@@ -28,7 +28,7 @@
    (pre-decoration :accessor pre-decoration :initarg :pre-decoration :initform nil)
    (post-decoration :accessor post-decoration :initarg :post-decoration :initform nil)))
 
-(defmethod initialize-instance :after ((obj text-style) &rest args &key font &allow-other-keys)
+(defmethod initialize-instance :after ((obj text-style) &key font &allow-other-keys)
     (when font (setf (font obj) font)))
 
 (defmethod (setf font) :around (font (style text-style))
@@ -289,6 +289,7 @@
   `(put-string (format nil "~a" ,obj)))
 
 (defmacro with-text-content ((content &key dont-save-style) &body body)
+  ;; TODO dont-save-style is not used, fix it or delete
   (with-gensyms (the-content)
     `(let* ((,the-content ,content)
 	    (*content* ,the-content)

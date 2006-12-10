@@ -1,7 +1,7 @@
 ;;; cl-typesetting copyright 2002 Marc Battyani see license.txt for details of the license
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
 
-(in-package typeset)
+(in-package #:typeset)
 
 (defun hyphenate-string (string)
   (let ((min-word-size (+ nix::*left-hyphen-minimum* nix::*right-hyphen-minimum*)))

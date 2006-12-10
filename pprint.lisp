@@ -2,7 +2,7 @@
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
 ;;; The homepage of cl-typesetting is here: http://www.fractalconcept.com/asp/html/cl-typesetting.html
 
-(in-package typeset)
+(in-package #:typeset)
 
 ;;; This is a module to typeset Common Lisp code with some syntax coloring
 ;;; The syntax coloring is too simple to be 100% accurate:
@@ -44,14 +44,6 @@
                          char))
             line))
 
-(defun read-from-string-ignoring-errors (string
-					 &optional eof-error-p eof-value
-					 &key start end preserve-whitespace)
-  (ignore-errors
-    (read-from-string string eof-error-p eof-value
-		      :start start :end end
-		      :preserve-whitespace preserve-whitespace)))
-
 (defun process-lisp-line (line)
   (multiple-value-bind (code comment)(split-comment line)
     (let* ((cleaned-line (clean-line code))
@@ -60,12 +52,13 @@
            (start 0)
            (trimmed 0)
            (length (length cleaned-line)))
-      (iter:iter
+      (iter
        (setf trimmed (position #\Space cleaned-line :start start :test #'char/=))
        (while (and trimmed (< trimmed length)))
-       (for (values obj end) = (read-from-string-ignoring-errors
+       (for (values obj end) = (ignore-errors
+                                 (read-from-string
                                   cleaned-line nil nil
-                                  :start trimmed :preserve-whitespace t))
+                                  :start trimmed :preserve-whitespace t)))
        (unless (numberp end)
          (setf end (position #\Space cleaned-line :start trimmed :test #'char=)))
        (while (and (numberp end) (< end length)))
@@ -129,6 +122,7 @@
     (let* ((margins '(30 50 30 50))
            (print-stamp (multiple-value-bind (second minute hour date month year)
                             (get-decoded-time)
+                          (declare (ignore second))
                           (format nil "Printed on ~4D-~2,'0D-~2,'0D ~2,'0D:~2,'0D"
                                   year month date hour minute)))
            (header (compile-text ()

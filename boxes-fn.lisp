@@ -1,7 +1,7 @@
 ;;; cl-typesetting copyright 2002 Marc Battyani see license.txt for details of the license
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
 
-(in-package typeset)
+(in-package #:typeset)
 
 (defun compute-boxes-size (boxes size-fn)
   (loop for box in boxes
@@ -46,7 +46,7 @@
 (defmethod (setf boxes) :after (value (box container-box))
   (compute-natural-box-size box))
 
-(defmethod initialize-instance :after ((box container-box) &rest args &key fixed-size &allow-other-keys)
+(defmethod initialize-instance :after ((box container-box) &key fixed-size &allow-other-keys)
   (unless fixed-size
     (compute-natural-box-size box)))
 

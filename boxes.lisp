@@ -2,7 +2,7 @@
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
 ;;; The homepage of cl-typesetting is here: http://www.fractalconcept.com/asp/html/cl-typesetting.html
 
-(in-package typeset)
+(in-package #:typeset)
 
 (defclass box ()
   ((dx :accessor dx :initform 0 :initarg :dx)

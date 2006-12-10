@@ -4,7 +4,12 @@
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
 ;;; The homepage of cl-typesetting is here: http://www.fractalconcept.com/asp/html/cl-typesetting.html
 
-(in-package asdf)
+(in-package :common-lisp-user)
+
+(defpackage #:cl-typesetting-system
+    (:use #:cl #:asdf))
+
+(in-package #:cl-typesetting-system)
 
 (defsystem :cl-typesetting
     :name "cl-typesetting"
