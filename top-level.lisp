@@ -133,23 +133,22 @@
       (let* ((width (aref (pdf::bounds pdf:*page*) 2))
              (height (aref (pdf::bounds pdf:*page*) 3))
              (dx (- width left-margin right-margin)))
-             ;(x left-margin)
-             ;(y (- height top-margin))
-             ;(dy (- height top-margin bottom-margin)))     
          (when header
            (let ((content (if (functionp header) (funcall header pdf:*page*) header)))
              (pdf:with-saved-state
-               (stroke (typecase content
-                         (box content)
-                         (t (make-filled-vbox content dx (- top-margin header-top)
+              (stroke (cond ((typep content 'box)
+                             content)
+                            (content
+                             (make-filled-vbox content dx (- top-margin header-top)
                                               :top nil)))
                        left-margin (- height header-top)))))
          (when footer
            (let ((content (if (functionp footer) (funcall footer pdf:*page*) footer)))
              (pdf:with-saved-state
-               (stroke (typecase content
-                         (box content)
-                         (t (make-filled-vbox content dx (- bottom-margin footer-bottom)
+              (stroke (cond ((typep content 'box)
+                             content)
+                            (content
+                             (make-filled-vbox content dx (- bottom-margin footer-bottom)
                                               :bottom nil)))
                        left-margin bottom-margin))))))
     (when finalize-fn
