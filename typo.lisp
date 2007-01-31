@@ -8,12 +8,14 @@
   ((name :accessor name :initform nil)))
 
 (defmethod use-style (style)
+  (declare (ignore style))
   )
 
 (defmethod style-p ((style style))
   t)
 
 (defmethod style-p (obj)
+  (declare (ignore obj))
   nil)
 
 (defclass text-style (style)
@@ -290,6 +292,7 @@
 
 (defmacro with-text-content ((content &key dont-save-style) &body body)
   ;; TODO dont-save-style is not used, fix it or delete
+  (declare (ignore dont-save-style))
   (with-gensyms (the-content)
     `(let* ((,the-content ,content)
 	    (*content* ,the-content)

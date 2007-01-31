@@ -235,6 +235,7 @@ text-style  Style used for printing the item body text."
   ((type :accessor mark-type :initform nil :initarg :type)))
 
 (defmethod stroke ((mark change-mark) x y)
+  (declare (ignore x))  
   ;; "stroking" change marks just records their positions for later
   ;; rendering in the postprocessing hook
   (cond ((eq :start-insert (mark-type mark))

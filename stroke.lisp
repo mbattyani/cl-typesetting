@@ -5,6 +5,7 @@
 (in-package #:typeset)
 
 (defmethod stroke (box x y)
+  (declare (ignore box x y))
   )
 
 (defmethod stroke :before ((box char-box) x y)
@@ -99,6 +100,7 @@
       (end-text-chunk))))
 
 (defmethod stroke ((style text-style) x y)
+  (declare (ignore x y))
   (when (font style)
     (setf *font* (font style)))
   (when (font-size style)

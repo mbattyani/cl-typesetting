@@ -15,6 +15,7 @@
   box)
 
 (defmethod cut-point-p (box)
+  (declare (ignore box))
   nil)
 
 (defmethod cut-point-p ((box (eql :eol)))
@@ -170,6 +171,7 @@
       (return-lines))))
 
 (defmethod do-layout (box)
+  (declare (ignore box))
   )
 
 (defmethod do-layout ((hbox hbox))

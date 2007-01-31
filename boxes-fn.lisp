@@ -34,6 +34,7 @@
 	finally (return (values (+ max-baseline max-bottom) max-baseline))))
 
 (defmethod compute-natural-box-size (box)
+  (declare (ignore box))
   )
 
 (defmethod compute-natural-box-size ((box hbox))
@@ -44,9 +45,11 @@
       (setf (dy box) size (internal-baseline box) baseline))))
 
 (defmethod (setf boxes) :after (value (box container-box))
+  (declare (ignore value))
   (compute-natural-box-size box))
 
-(defmethod initialize-instance :after ((box container-box) &key fixed-size &allow-other-keys)
+(defmethod initialize-instance :after
+    ((box container-box) &key fixed-size &allow-other-keys)
   (unless fixed-size
     (compute-natural-box-size box)))
 
@@ -57,6 +60,7 @@
   (setf (dy box) (compute-boxes-natural-size (boxes box) #'dy)))
 
 (defmethod align-baseline (box alignment)
+  (declare (ignore box alignment))
   )
 
 (defmethod align-baseline ((box hbox) alignment)

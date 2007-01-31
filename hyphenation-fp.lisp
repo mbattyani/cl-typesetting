@@ -53,9 +53,11 @@
   )
 
 (defmethod (setf pattern-trie) (value hyphen-trie)
+  (declare (ignore hyphen-trie))
   value)
 
 (defmethod (setf exception-trie) (value hyphen-trie)
+  (declare (ignore hyphen-trie))
   value)
 
 (defvar *left-hyphen-minimum* 2

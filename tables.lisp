@@ -201,6 +201,7 @@
 		       +epsilon+))))
 
 (defmethod v-split ((table table) dx dy)
+  (declare (ignore dx))
   "Factor out rows that fit and return a split table + the table."
   ;; Treat unsplittable rows as a single unit - for this purpose,
   ;; group the rows list into the following form:

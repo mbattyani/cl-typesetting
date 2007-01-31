@@ -12,27 +12,35 @@
    ))
 
 (defmethod dx (box)
+  (declare (ignore box))
   0)
 
 (defmethod (setf dx) (value box)
+  (declare (ignore box))
   value)
 
 (defmethod dy (box)
+  (declare (ignore box))
   0)
 
 (defmethod (setf dy) (value box)
+  (declare (ignore box))
   value)
 
 (defmethod baseline (box)
+  (declare (ignore box))
   0)
 
 (defmethod (setf baseline) (value box)
+  (declare (ignore box))
   value)
 
 (defmethod offset (box)
+  (declare (ignore box))
   0)
 
 (defmethod (setf offset) (value box)
+  (declare (ignore box))
   value)
 
 (defclass h-mode-mixin ()
@@ -42,18 +50,23 @@
   ())
 
 (defmethod delta-size (obj)
+  (declare (ignore obj))
   0)
 
 (defmethod max-expansion (obj)
+  (declare (ignore obj))
   0)
 
 (defmethod expansibility (obj)
+  (declare (ignore obj))
   0)
 
 (defmethod max-compression (obj)
+  (declare (ignore obj))
   0)
 
 (defmethod compressibility (obj)
+  (declare (ignore obj))
   0)
 
 (defclass soft-box (box)
@@ -65,9 +78,11 @@
    (locked :accessor locked :initform nil :initarg :locked)))
 
 (defmethod locked (box)
+  (declare (ignore box))
   t)
 
 (defmethod (setf locked) (value box)
+  (declare (ignore box))
   value)
 
 (defclass container-box (soft-box)
@@ -106,30 +121,35 @@
   ((trimmable-p :accessor trimmable-p :initform nil :initarg :trimmable-p)))
 
 (defmethod soft-box-p (box)
+  (declare (ignore box))
   nil)
 
 (defmethod soft-box-p ((box soft-box))
   t)
 
 (defmethod char-box-p (box)
+  (declare (ignore box))
   nil)
 
 (defmethod char-box-p ((box char-box))
   t)
 
 (defmethod white-char-box-p (box)
+  (declare (ignore box))
   nil)
 
 (defmethod white-char-box-p ((box white-char-box))
   t)
 
 (defmethod trimmable-p (box)
+  (declare (ignore box))
   nil)
 
 (defmethod trimmable-p ((box glue))
   t)
 
 (defmethod white-space-p (box)
+  (declare (ignore box))
   nil)
 
 (defmethod white-space-p ((box glue))
@@ -139,18 +159,21 @@
   t)
 
 (defmethod hmode-p (box)
+  (declare (ignore box))
   nil)
 
 (defmethod hmode-p ((box h-mode-mixin))
   t)
 
 (defmethod vmode-p (box)
+  (declare (ignore box))
   nil)
 
 (defmethod vmode-p ((box v-mode-mixin))
   t)
 
 (defmethod adjust-box-dx (box dx baseline)
+  (declare (ignore box dx baseline))
   nil)
 
 (defmethod adjust-box-dx ((box hbox) dx baseline)
@@ -164,6 +187,7 @@
 	  (baseline box) baseline)))
 
 (defmethod adjust-box-dy (box dy baseline)
+  (declare (ignore box dy baseline))
   nil)
 
 (defgeneric v-split (box dx dy)
