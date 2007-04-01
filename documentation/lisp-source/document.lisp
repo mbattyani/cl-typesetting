@@ -10,10 +10,11 @@
 (defun generate-cl-pdf-documentation (&key (file "/tmp/cl-pdf-doc.pdf"))
 
   (tt:with-document  
-      ()
+      (:author "Brian Sorg, Founder Liberating Insight LLC" :title "Cl-Pdf Documentation" :keywords "Cl-Pdf, Cl-Typesetting" :subject "Cl-Pdf User Document")
     (title-page)
     (chapter-1)
     (chapter-2)
+    (chapter-3)
     (appendix-a)
     (when pdf:*page* (typeset:finalize-page pdf:*page*))
     (tt:write-document file)))

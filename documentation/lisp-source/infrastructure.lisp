@@ -105,3 +105,22 @@ Header-Size - Relates to the importance of the header. 1 Signals the most import
 	  (tt:verbatim print-stamp)
 	  (tt:verbatim 
 	   (format nil "   Page ~a" pdf:*page-number*)))))))
+
+
+(defmacro function-description ((name &key (type "function") (spec "()") (return-value "nil") (args nil)) &body description)
+  "Macro to set up a macro or function description"
+  (let ((line (gensym)))
+    `(pdf:with-outline-level (,name (pdf:register-page-reference))
+      (header (tt:put-string (string-upcase ,name)) 4)
+      (header "Syntax" 5)
+      (body-text ,type " " (highlight ,name) " " (emphasize ,spec) " ==> " ,return-value)
+      (when ,args
+	(header "Arguments" 5)
+	(dolist (,line ,args)
+	  (if (listp ,line)
+	      (tt:paragraph (:font "Helvetica" :font-size 10 :left-margin 40)
+		(emphasize (tt:put-string (first ,line))) (tt:put-string (format nil ": ~a" (second ,line))))
+	      (tt:paragraph (:font "Helvetica" :font-size 10 :left-margin 20)
+		(highlight (tt:put-string ,line))))))
+      (header "Description" 5)
+      ,@description)))
