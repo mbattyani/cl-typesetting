@@ -75,7 +75,8 @@
 	       (unless (or string text-chunk)
 		 (setf text-x x text-y (+ offset y)))
 	       (let ((char (boxed-char char-box)))
-		 (when (find char "\\()" :test #'char=)
+                 ;; FIXME possibly needed when not using unicode? delme otherwise...
+		 #+nil(when (find char "\\()" :test #'char=)
 		   (push #\\ string))
 		 (push char string)))
 	     (add-spacing (space)
