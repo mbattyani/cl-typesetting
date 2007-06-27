@@ -17,7 +17,11 @@
    (height :accessor height :initform 0)
    (v-align :accessor v-align :initform :top :initarg :v-align)
    (background-color :accessor background-color :initform nil :initarg :background-color)
+   ;; col-span equal to 0 (zero) means that the cell spans all rows
+   ;; from the current row to the last row of the table
    (col-span :accessor col-span :initform 1 :initarg :col-span)
+   ;; row-span equal to 0 (zero) means that the cell spans all columns
+   ;; from the current column to the last column of the table
    (row-span :accessor row-span :initform 1 :initarg :row-span)
    ;; Quad specifying the border to be drawn between table border and cell padding;
    ;; Borders of a cell count for its external height (unless it is limited by the height
@@ -73,6 +77,10 @@
   `(or (numberp (row-span ,cell))		; still untouched cell
        (eq (first-or-self (row-span ,cell)) ,row)))
 
+(defmacro cell-continue-row-p (cell row)
+  `(and (consp (row-span ,cell))
+        (not (eq (first (row-span ,cell)) ,row))))
+
 (defmacro cell-end-row-p (cell row)
   `(and (consp (row-span ,cell))
         (eq (first (last (row-span ,cell))) ,row)))
@@ -80,37 +88,100 @@
 (defun span-cell (rows cell col-number)
  ;;; Replace the cell's numeric row-span by the list of rows spanned
   ;; and add the cell into the cell list of each of these rows.
-  ;; Args: rows    Table row sublist starting from the one where the cell was defined.
-  ;;   col-number  Starts from zero.
+  ;; Args: rows        Table row sublist starting from the one where the cell was defined.
+  ;;       col-number  Starts from zero.
   (setf (splittable-p (first rows)) nil)
-  (loop for row in (rest rows)
-        and i downfrom (1- (row-span cell)) above 0	;repeat (1- (row-span cell))
-        collect row into rows-spanned
-        when (> i 1)				; set all but last rows unsplittable
-          do (setf (splittable-p row) nil)
-        do
-	(loop for j = 0 then (+ j (col-span c))
-              for tail = (cells row) then (cdr tail);; hack for CLISP instead of for tail on (cells row)
-              for c = (first tail)		; j is the column number of c
-              while (and c (< j col-number))
-              collect (first tail) into head
-              finally				; insert cell between head and tail
-              (setf (cells row) (nconc head (list cell) tail)))
-        finally					; replace numeric row-span by the list
-        (return (setf (row-span cell) (cons (first rows) rows-spanned)))))
+  (do* ((rows-spanned (list (first rows)))
+        (row-span (row-span cell))		; zero row-span means all the rows
+        (i (if (= row-span 0) most-positive-fixnum (1- row-span)) (1- i))
+        (tail (rest rows) rest)
+        (rest (rest tail) (rest rest)))
+       ((or (null tail) (= i 0))		; replace numeric row-span by the list
+        (setf (row-span cell) (nreverse rows-spanned)))
+    (let ((row (first tail)))
+      (push row rows-spanned)
+      (when (and (> i 1) rest)			; set all but last rows unsplittable
+        (setf (splittable-p row) nil))
+      (do* ((head () (cons c head))
+            (j 0 (+ j (col-span c)))
+            (tail (cells row) (rest tail))
+            (c (first tail) (first tail)))	; j is the column number of c
+           ((or (null c) (>= j col-number))	; insert cell between head and tail
+            (setf (cells row) (nreconc head (cons cell tail))) )) )))
+      
+(defun reduce+nullable (rows &key (key #'height) (initial-value 0) end)
+ ;;; Summarize height of the rows in subsequence (subseq rows 0 length).
+  ;; Returns NIL as soon as some of the height values is null.
+  (do ((i 0 (1+ i))
+       (tail rows (rest tail)))
+      ((or (null tail) (and end (>= i end)))
+       (values initial-value i))
+    (let* ((elt (first tail))
+           (value (if key (funcall key elt) elt)))
+      (if value
+          (incf initial-value value)
+          (return nil)))))
 
-(defun compute-row-size (table row &optional rows)
+(defun row-cell-col-number (cell cells)
+ ;;; Value: column number of the cell with cells
+  (do ((j 0 (+ j col-span))			; step by col-span
+       (tail cells (rest tail))
+       c
+       col-span)
+      ((null tail)
+       nil)
+    (cond ((eq cell (setq c (first tail)))
+           (return j))
+          ((= (setq col-span (col-span c)) 0)
+           (return most-positive-fixnum)))))
+
+(defun reorder-row-cells (row)
+ ;;; Sort the row's cells correctly as there are more than one cells that
+  ;; - are defined by the previous row or rows, and
+  ;; - are spanning to this row.
+  ;; Value: new list
+  (flet ((predicate (cell) (cell-continue-row-p cell row)))
+    (do* ((cells (cells row))
+          (continue (sort (mapcar (lambda (cell)	; alist of cells defined above
+                                    (cons cell (row-cell-col-number
+                                                cell (cells (first (row-span cell))))))
+                                  (remove-if-not #'predicate cells))
+                          #'<
+                          :key #'cdr))
+          (start (remove-if #'predicate cells))		; list cells defined here
+          cell
+          (j 0 (+ j (col-span cell)))
+          (acc ()))
+         ((cond ((null continue)
+                 (setq acc (nreconc acc start))
+                 t)
+                ((null start)
+                 (setq acc (nreconc acc (mapcar #'car continue)))
+                 t))
+          acc)
+      (if (>= j (cdar continue))
+          (setq cell (caar continue)			; found in above
+                continue (cdr continue))
+          (setq cell (pop start)))			; take from current
+      (push cell acc))))
+
+(defun compute-row-size (table row rows)
   (let ((full-size-offset (+ (border table) (* 2 (cell-padding table))))
-        (height (or (height row) +huge-number+)))
+        (height (or (height row) +huge-number+))
+        (continued-count 0))				; nr of spanned cells defined above
     (loop with next-widths = (col-widths table)
+          with col-count = (length next-widths)
           for cell in (cells row)
           and width = (pop next-widths)
-          and col-number = 0 then (+ col-number col-span 1)
+          and col-number = 0 then (+ col-number actual-col-span 1)
 	  and cell-height = 0.0
-          for col-span = (1- (col-span cell))
+          for col-span = (col-span cell)
           and row-span = (row-span cell)
           and cell-border = (border cell)
-          for cell-borders-width 
+          for actual-col-span = (1- (if (= col-span 0)	; allowed for the very last column
+                                        (- col-count col-number)
+                                        col-span))
+          and cell-borders-width 
               = (cond ((symbolp cell-border) 0)
                       ((numberp cell-border) (+ cell-border cell-border))
                       ((with-quad (left-border nil right-border) cell-border
@@ -121,22 +192,41 @@
                          ((with-quad (left-border top-border nil bottom-border) cell-border
                             (+ top-border bottom-border))))
 	  unless width do (error "Too many cells in this row")
-	  ;; Adjust cell width for cells spanning multiple columns
-          unless (zerop col-span)
-            do (incf width (+ (* col-span full-size-offset)
-                              (reduce #'+ next-widths :end col-span)))
-               (setf next-widths (nthcdr col-span next-widths))
+	  ;; Adjust the cell width for cells spanning multiple columns
+          unless (= actual-col-span 0)
+            do (incf width (+ (* actual-col-span full-size-offset)
+                              (reduce #'+ next-widths :end actual-col-span)))
+               (setf next-widths (nthcdr actual-col-span next-widths))
 
-          ;; Fill cell with content if required
-          when (cell-start-row-p cell row)
-            do (setf (box cell) (make-filled-vbox (content cell)
-                                                  (- width cell-borders-width)
-                                                  height (v-align cell))
+          ;; Fill in the cell with content as required and when it spans several rows
+          ;; of fixed height, summarize these height values for layout purpose.
+          if (cell-start-row-p cell row)
+          do (setf (box cell) (make-filled-vbox (content cell)
+                                  (- width cell-borders-width)
+                                  (cond ((eql row-span 1)
+                                         height)
+                                        ((numberp row-span)
+                                         (multiple-value-bind (height row-span)
+                                             (reduce+nullable rows
+                                                              :end (if (= row-span 0)
+                                                                       most-positive-fixnum
+                                                                       row-span))
+                                           (if height	
+                                               (+ height (* (1- row-span) ; actual row-span
+                                                            full-size-offset))
+                                               +huge-number+)))
+                                        ((reduce+nullable row-span	; list of rows
+                                              :initial-value (* (1- (length row-span))
+                                                                full-size-offset)))
+                                        (+huge-number+))
+                                  (v-align cell))
                      (width cell) width)
-	    
+          else if (cell-continue-row-p cell row)
+               do (incf continued-count)
+          end
           ;; A cell spanning several rows participates only in height calculation 
           ;; of the last row
-          if (and (numberp row-span) (> row-span 1))
+          if (and (numberp row-span) (/= row-span 1))	; 0 or >1
           do (span-cell rows cell col-number)
           else unless (height row)
             if (eql row-span 1)
@@ -156,6 +246,8 @@
 
           finally (setf height (+ (max (or (height row) 0.0) max-height) +epsilon+)))
     (setf (height row) height)
+    (when (> continued-count 1)			  ; if two or more row-spanned cells are
+      (setf (cells row) (reorder-row-cells row))) ; continued into this row, sort all cells
     (loop for cell in (cells row)
           for row-span = (row-span cell)
           and cell-border = (border cell)
@@ -402,72 +494,3 @@
 
 (defmacro cell ((&rest args) &body body)
   `(add-table-cell (make-instance 'table-cell :content (compile-text () ,@body) ,@args)))
-
-#|
-(defun test-table (&optional (file (lw:current-pathname "test-table.pdf"))
-                   &aux content table (margins '(72 72 72 50)))
-  (let* ((tt:*default-font* (pdf:get-font "Helvetica"))
-         (tt:*default-font-size* 10))
-   (with-document ()
-    (setq content (compile-text (:font tt:*default-font* :font-size tt:*default-font-size*)
-     (tt:paragraph () "Test table spans and borders")
-           ;; Various spans
-     (tt:table (:col-widths '(20 40 60 80 120) :background-color :yellow :border 1)
-       (tt:header-row ()
-         (tt:cell (:col-span 5)
-           (tt:paragraph (:h-align :center :font-size 12)
-             "Table with cells spanning more then one row or column")))
-       (tt:row (:background-color :green)
-         (tt:cell (:row-span 2 :background-color :blue)
-           "1,1 2,1  row-span 2")
-         (tt:cell () "1,2")
-         (tt:cell (:col-span 2 :row-span 3 :background-color :red)
-           "1,3 1,4 - 3,3 3,4  col-span 2 row-span 3")
-         (tt:cell () "1,5"))
-       (tt::row ()
-         (tt:cell () "2,2")
-         (tt:cell (:row-span 2 :background-color :blue) "2,5 3,5  row-span 2"))
-       (tt:row (:background-color :green)
-         (tt:cell (:col-span 2) "3,1 3,2  col-span 2"))
-       (tt::row ()
-         (tt:cell () "4,1")
-         (tt:cell () "4,2")
-         (tt:cell () "4,3")
-         (tt:cell () "4,4")
-         (tt:cell () "4,5")))
-    (setq table
-     (tt:table (:col-widths '(50 40 60 80 120) :border 0)
-       (tt:header-row ()
-         (tt:cell (:col-span 5 :border 1)
-           (tt:paragraph (:h-align :centered :font-size 12)
-             "Cells with borders")))
-       (tt:row (:background-color :green)
-         (tt:cell (:row-span 2 :background-color :blue)
-           "1,1 2,1  row-span 2")
-         (tt:cell () "1,2")
-         (tt:cell (:col-span 2 :row-span 3 :background-color :red)
-           "1,3 1,4 - 3,3 3,4  col-span 2 row-span 3")
-         (tt:cell () "1,5"))
-       (tt:row ()
-         (tt:cell (:border 2) "2,2")
-         (tt:cell (:row-span 2 :background-color :blue) "2,5 3,5  row-span 2"))
-       (tt:row (:background-color :green)
-         (tt:cell (:col-span 2 :border 2) "3,1 3,2  col-span 2"))
-       (tt:row ()
-         (tt:cell (:border #(3 0 0 0)) "4,1 left-border 3")
-         (tt:cell (:border #(0 3 0 0)) "4,2 top-border 3")
-         (tt:cell (:border #(2 2 2 2)) "4,3 border #(2 2 2 2)")
-         (tt:cell (:border #(0 0 3 0)) "4,4 right-border 3")
-         (tt:cell (:border #(0 0 0 3)) "4,5 bottom-border 3"))
-       (tt:row ()
-         (tt:cell (:col-span 5 :border '(0 1/4))
-           (tt:paragraph (:h-align :justified :font-size 12)
-             "bottom" :hfill "cell" :hfill "spanning" :hfill "several" :hfill "rows"))))
-    )))
-    (draw-pages content :margins margins :break :after)
-    (pdf:write-document file)))
- table)
-
-(pdf:load-fonts)
-(setq table (test-table (lw:current-pathname "examples/test-table.pdf")))
- |#
