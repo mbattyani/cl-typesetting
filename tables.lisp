@@ -166,9 +166,12 @@
       (push cell acc))))
 
 (defun compute-row-size (table row rows)
-  (let ((full-size-offset (+ (border table) (* 2 (cell-padding table))))
-        (height (or (height row) +huge-number+))
-        (continued-count 0))				; nr of spanned cells defined above
+  (let* ((full-size-offset (+ (border table) (* 2 (cell-padding table))))
+         (height-expr (height row))
+         (height (if (numberp height-expr)
+                     height-expr
+                     +huge-number+))
+         (continued-count 0))				; nr of spanned cells defined above
     (loop with next-widths = (col-widths table)
           with col-count = (length next-widths)
           for cell in (cells row)
@@ -228,7 +231,7 @@
           ;; of the last row
           if (and (numberp row-span) (/= row-span 1))	; 0 or >1
           do (span-cell rows cell col-number)
-          else unless (height row)
+          else unless (numberp height-expr)
             if (eql row-span 1)
             do (setq cell-height (+ (compute-boxes-natural-size (boxes (box cell)) #'dy)
                                     cell-borders-height))
@@ -244,7 +247,15 @@
 
 	  maximize cell-height into max-height
 
-          finally (setf height (+ (max (or (height row) 0.0) max-height) +epsilon+)))
+          ;finally (setf height (+ (max (or (height row) 0.0) max-height) +epsilon+))
+          finally (setf height (+ (cond ((numberp height-expr)
+                                         (max height-expr max-height))
+                                        ((consp height-expr)
+                                         (apply (first height-expr)
+                                                (subst max-height :text-height
+                                                       (rest height-expr))))
+                                        (t max-height))
+                                  +epsilon+)))
     (setf (height row) height)
     (when (> continued-count 1)			  ; if two or more row-spanned cells are
       (setf (cells row) (reorder-row-cells row))) ; continued into this row, sort all cells
