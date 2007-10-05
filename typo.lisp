@@ -28,7 +28,8 @@
    (left-margin :accessor left-margin :initarg :left-margin :initform nil)
    (right-margin :accessor right-margin :initarg :right-margin :initform nil)
    (pre-decoration :accessor pre-decoration :initarg :pre-decoration :initform nil)
-   (post-decoration :accessor post-decoration :initarg :post-decoration :initform nil)))
+   (post-decoration :accessor post-decoration :initarg :post-decoration :initform nil)
+   (leading-ratio :accessor leading-ratio :initarg :leading-ratio :initform nil)))
 
 (defmethod initialize-instance :after ((obj text-style) &key font &allow-other-keys)
     (when font (setf (font obj) font)))
@@ -86,8 +87,9 @@
     (%use-style% right-margin *right-margin*)
     (%use-style% h-align *h-align*)
     (%use-style% pre-decoration *pre-decoration*)
-    (%use-style% post-decoration *post-decoration*))
-  (when (or (font style)(font-size style))
+    (%use-style% post-decoration *post-decoration*)
+    (%use-style% leading-ratio *leading-ratio*))
+  (when (or (font style) (font-size style) (leading-ratio style))
     (setf *leading* (* *font-size* *leading-ratio*))))
 
 (defmethod save-style ((style text-style))
@@ -100,7 +102,8 @@
   (setf (right-margin style) *right-margin*)
   (setf (h-align style) *h-align*)
   (setf (pre-decoration style) *pre-decoration*)
-  (setf (post-decoration style) *post-decoration*))
+  (setf (post-decoration style) *post-decoration*)
+  (setf (leading-ratio style) *leading-ratio*))
 
 (defmethod restore-default-style ((style text-style))
   (setf (font style) *default-font*)
@@ -112,7 +115,8 @@
   (setf (right-margin style) *default-right-margin*)
   (setf (h-align style) *default-h-align*)
   (setf (pre-decoration style) *default-pre-decoration*)
-  (setf (post-decoration style) *default-post-decoration*))
+  (setf (post-decoration style) *default-post-decoration*)
+  (setf (leading-ratio style) *default-leading-ratio*))
 
 (defmethod make-restore-style ((style text-style))
   (let ((new-style (make-instance 'text-style)))
@@ -128,7 +132,8 @@
       (%use-style% right-margin *right-margin*)
       (%use-style% h-align *h-align*)
       (%use-style% pre-decoration *pre-decoration*)
-      (%use-style% post-decoration *post-decoration*))
+      (%use-style% post-decoration *post-decoration*)
+      (%use-style% leading-ratio *leading-ratio*))
     new-style))
 
 (defmethod copy-style ((style text-style))
@@ -140,7 +145,8 @@
 		 :right-margin (right-margin style)
 		 :h-align (h-align style)
 		 :pre-decoration (pre-decoration style)
-		 :post-decoration (post-decoration style)))
+		 :post-decoration (post-decoration style)
+                 :leading-ratio (leading-ratio style)))
 
 (defclass text-line (hbox)
   ())
@@ -306,7 +312,8 @@
 	    (*left-margin* *default-left-margin*)
 	    (*right-margin* *default-right-margin*)
 	    (*pre-decoration* *default-pre-decoration*)
-	    (*post-decoration* *default-post-decoration*))
+	    (*post-decoration* *default-post-decoration*)
+            (*leading-ratio* *default-leading-ratio*))
       (progn ,@body))))
 
 (defmacro compile-text ((&rest args) &body body)

@@ -17,8 +17,6 @@
 (defconstant +huge-number+ (truncate most-positive-fixnum 10))
 (defconstant +epsilon+ 0.0001)
 
-(defvar *leading-ratio* 1.2)
-
 ;;
 ;; FLAG -- collect all these in *default-text-style* and *current-text-style* ;; djc
 ;; Note: Don't let any of these variables become NIL, otherwise
@@ -35,20 +33,23 @@
 (defvar *default-right-margin* 0)
 (defvar *default-pre-decoration* :none)
 (defvar *default-post-decoration* :none)
+(defvar *default-leading-ratio* 1.2)
 
 (defvar *font* *default-font*)
 (defvar *font-size* *default-font-size*)
 (defvar *text-x-scale* *default-text-x-scale*)
 (defvar *color* *default-color*)
 (defvar *background-color* *default-background-color*)
-(defvar *pre-decoration* *default-pre-decoration*)
-(defvar *post-decoration* *default-post-decoration*)
 (defvar *h-align* *default-h-align*)
 (defvar *v-align* *default-v-align*)
 (defvar *left-margin* *default-left-margin*)
 (defvar *right-margin* *default-right-margin*)
-(defvar *offset* 0)
+(defvar *pre-decoration* *default-pre-decoration*)
+(defvar *post-decoration* *default-post-decoration*)
+(defvar *leading-ratio* *default-leading-ratio*)
 (defvar *leading* (* *font-size* *leading-ratio*))
+
+(defvar *offset* 0)
 (defvar *use-exact-char-boxes* nil)
 
 (defvar *content* nil)
