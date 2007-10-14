@@ -691,11 +691,15 @@
      (pdf:write-document file)))
 
 ;;; Unicode test
+#+nil
+(pdf:load-ttu-font #P"/tmp/times.ufm"
+                   #P"/tmp/times.ttf")
 
 (defparameter *unicode-test-string*
   (map unicode-string-type 'code-char
-    '(8252 8319 8359 8592 8593 8594 8595 8596 8597 8616 915 920 934 945 948 949 963 964 966 32
-      9554 9555 9556 9557 9558 9559 9560 9561 9562 9563 9564 9565 9566 9567 32 65
+    '(65 110 32 117 110 105 99 111 100 101 32 115 116 114 105 110 103 58 32
+      8252 8319 8359 8592 8593 8594 8595 8596 8597 8616 915 920 934 945 948 949 963 964 966 32
+      9554 9555 9556 9557 9558 9559 9560 9561 9562 9563 9564 9565 9566 9567 32 65 41 41 66
       9568 9650 9658 9660 9668 9675 9688 9689 8364 1027 8218 402 8222 8230 8224 8225 32 66
       372 373 374 375 383 506 507 508 509 510 511 903 913 914 916 917 918 919 921 922 923 32
       946 947 950 951 952 953 954 955 956 957 958 1101 1102 1103 1105 1106 1107 1108 32
@@ -719,6 +723,7 @@
 			      "The cool Common Lisp typesetting system")
 			    (vspace 50)
 			    (with-style (:font "TimesNewRomanPSMT" :font-size 36)
-			      (put-string *unicode-test-string*))))))
+			      (put-string *unicode-test-string*):eol
+                              (put-string "A non unicode-string in unicode font"))))))
 	  (draw-block content 20 800 545 700))))
     (pdf:write-document file)))
