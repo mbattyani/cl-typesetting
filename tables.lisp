@@ -459,13 +459,16 @@
                                     (incf cell-offset-x left-border)
                                     (incf cell-offset-y top-border))))
                             (pdf:stroke)))
-                        (stroke (box cell) cell-offset-x (- cell-offset-y)))))))
+                        (stroke cell cell-offset-x (- cell-offset-y)))))))
 
 (defmethod stroke ((table split-table) x y)
   (stroke-table (original-table table) x y (rows table) (dy table)))
 
 (defmethod stroke ((table table) x y)
   (stroke-table table x y (rows table) (dy table)))
+
+(defmethod stroke ((cell table-cell) x y)
+  (stroke (box cell) x y))
 
 ;;; Convenience macros 
 
