@@ -118,7 +118,7 @@
        (values initial-value i))
     (let* ((elt (first tail))
            (value (if key (funcall key elt) elt)))
-      (if value
+      (if (numberp value)
           (incf initial-value value)
           (return nil)))))
 
