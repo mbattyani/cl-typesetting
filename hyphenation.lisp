@@ -4,7 +4,7 @@
 (in-package #:typeset)
 
 (defun hyphenate-string (string)
-  (let ((min-word-size (+ nix::*left-hyphen-minimum* nix::*right-hyphen-minimum*)))
+  (let ((min-word-size (+ cl-typesetting-hyphen::*left-hyphen-minimum* cl-typesetting-hyphen::*right-hyphen-minimum*)))
     (when (>= (length string) min-word-size)
       (loop
 	  for prev-word-end = 0 then word-end
@@ -13,6 +13,6 @@
 	  while word-end
 	  when (>= (- word-end word-start) min-word-size)
 	  nconc (mapcar #'(lambda (n) (+ word-start n))
-			(nix::hyphen-find-hyphen-points
-			 nix::*american-hyphen-trie* (subseq string word-start word-end)))))))
+			(cl-typesetting-hyphen::hyphen-find-hyphen-points
+			 cl-typesetting-hyphen::*american-hyphen-trie* (subseq string word-start word-end)))))))
 

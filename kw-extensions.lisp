@@ -325,8 +325,8 @@ page instead of below new ;; content. Needs toplevel extension
 			(paper-size *paper-size*))
   "Render the document specified by the trees, which is a s-exp containing
 a list of recursive typesetting commands. It gets eval'ed here to typeset it."
-  (setq nix::*left-hyphen-minimum* 999
-	nix::*right-hyphen-minimum* 999)
+  (setq cl-typesetting-hyphen::*left-hyphen-minimum* 999
+	cl-typesetting-hyphen::*right-hyphen-minimum* 999)
   (tt:with-document ()
     (let ((margins *page-margins*)
 	  (header (lambda (pdf:*page*)
