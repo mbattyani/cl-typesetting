@@ -153,18 +153,37 @@
 
 (defun make-char-box (char)
   (if *use-exact-char-boxes*
-      (multiple-value-bind (width ascender descender) (pdf:get-char-size char *font* *font-size*)
-	(setq width (* width *text-x-scale*))
-	(make-instance 'char-box :boxed-char char :dx width :dy (- ascender descender) :baseline ascender))
-    (make-instance 'char-box :boxed-char char :dx (* (pdf:get-char-width char *font* *font-size*)
-						     *text-x-scale*)
-		   :dy *leading* :baseline *font-size*)))
+      (multiple-value-bind (width ascender descender)
+          (pdf:get-char-size char *font* *font-size*)
+        (make-instance 'char-box :boxed-char char
+                       :dx (* width *text-x-scale*)
+                       :dy (- ascender descender)		; descender <=0 usually
+                       :baseline ascender))
+      (make-instance 'char-box :boxed-char char
+		     :dx (* (pdf:get-char-width char *font* *font-size*) *text-x-scale*)
+                     :dy *leading*
+                     :baseline (+ *font-size* (pdf:get-font-descender *font* *font-size*)))))
 
 (defun make-white-char-box (char &optional (trimmable-p t))
-  (let ((width (* (pdf:get-char-width char *font* *font-size*) *text-x-scale*)))
-    (make-instance 'white-char-box :trimmable-p trimmable-p :dy *leading* :baseline *font-size*
-		   :dx width :max-expansion (* width 10) :max-compression (* width 0.7)
-		   :expansibility (* width 2.0) :compressibility width)))
+  (if *use-exact-char-boxes*
+      ;; In exact mode, we must also use ascender for not making baseline too large
+      ;; (similar to make-char-box)
+      (multiple-value-bind (width ascender descender)
+          (pdf:get-char-size char *font* *font-size*)
+	(setq width (* width *text-x-scale*))
+        (make-instance 'white-char-box :trimmable-p trimmable-p
+                       :dx width
+                       :dy (- ascender descender)
+                       :baseline ascender
+                       :max-expansion (* width 10) :max-compression (* width 0.7)
+                       :expansibility (* width 2.0) :compressibility width))
+      (let ((width (* (pdf:get-char-width char *font* *font-size*) *text-x-scale*)))
+        (make-instance 'white-char-box :trimmable-p trimmable-p
+                       :dx width
+                       :dy *leading*
+                       :baseline (+ *font-size* (pdf:get-font-descender *font* *font-size*))
+                       :max-expansion (* width 10) :max-compression (* width 0.7)
+                       :expansibility (* width 2.0) :compressibility width))))
 
 (defun make-not-trimmable-white-char-box (char)
   (let ((width (* (pdf:get-char-width char *font* *font-size*) *text-x-scale*)))
