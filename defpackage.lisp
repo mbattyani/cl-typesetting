@@ -9,6 +9,7 @@
   (:use :common-lisp :iterate)
   (:nicknames tt)
   (:export
+   #:cannot-fit
    #:with-text-content #:with-document #:compile-text #:draw-pages #:finalize-page
    #:write-document
    #:paragraph 
@@ -23,8 +24,5 @@
    #:vbox #:hbox #:colored-box #:user-drawn-box
    #:mark-ref-point #:find-ref-point #:find-ref-point-page-number #:find-ref-point-page-data
    #:add-contextual-action #:set-contextual-variable #:push-contextual-variable
-   #:pop-contextual-variable #:get-contextual-variable
-   ))
-
-
+   #:pop-contextual-variable #:get-contextual-variable))
 

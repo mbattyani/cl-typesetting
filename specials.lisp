@@ -99,10 +99,17 @@
              (format stream "Unexpected end-of-page during layout or stroking~@[ ~s~]."
                      (box c)))))
 
-(define-condition cannot-fit-on-page (condition)
-  ((box :initarg :box :reader box :initform nil))
+(define-condition cannot-fit (condition)
+  ((box :initarg :box :reader box :initform nil)))
+
+(define-condition cannot-fit-on-line (cannot-fit) ()
   (:report (lambda (c stream)
-             (format stream "Unable to fit object~@[ ~s~] even on a new page."
+             (format stream "Unable to fit on a line~@[, object ~s~]."
+                     (box c)))))
+
+(define-condition cannot-fit-on-page (cannot-fit) ()
+  (:report (lambda (c stream)
+             (format stream "Unable to fit even on a new page~@[, object~s~]."
                      (box c)))))
 
 (defmacro defconstant* (name value &optional doc)

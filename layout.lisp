@@ -163,7 +163,9 @@
 	       (setf boxes-left last-cut-boxes-left)
 	       (next-line (cons (convert-hyphen-to-char-box last-cut-point)
 				(cdr (member last-cut-point line-boxes)))))
-	      (t (unless line-boxes (error "could not fit anything"))
+              ((not line-boxes)
+               (error 'cannot-fit-on-line :box box))	; Was "could not fit anything"
+	      (t
 	       (next-line line-boxes) (setf boxes-left (cons box boxes-left))))
 	    (setf x next-x)
 	    finally
