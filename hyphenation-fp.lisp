@@ -12,12 +12,12 @@
 ;;;        F-57070 Metz France
 ;;; www:   http://www.metz.supelec.fr/~popineau/
 
-(defpackage "CL-TYPESETTING-HYPHEN"
+(defpackage :cl-typesetting-hyphen
   (:use common-lisp)
   (:export
    ))
 
-(in-package "CL-TYPESETTING-HYPHEN")
+(in-package :cl-typesetting-hyphen)
 
 (defvar *cl-typesetting-base-directory*
    (make-pathname :name nil :type nil :version nil
