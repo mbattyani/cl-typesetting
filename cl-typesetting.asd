@@ -38,6 +38,6 @@
 		 (:file "kw-extensions" :depends-on ("top-level" "hyphenation"))
 ;		 (:file "test" :depends-on ("top-level" "tables" "math"))
 		 (:file "pprint" :depends-on ("top-level"))
-		 )
+		 (:file "zzinit" :depends-on ("specials" "hyphenation-fp")))
     :depends-on (:cl-pdf))
 

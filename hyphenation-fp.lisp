@@ -298,8 +298,13 @@
 
 (defparameter *american-hyphen-trie* (make-instance 'hyphen-trie :language :american))
 (defparameter *french-hyphen-trie* (make-instance 'hyphen-trie :language :french))
-(read-hyphen-file *american-hyphen-trie*)
-(read-hyphen-file *french-hyphen-trie*)
+
+;;
+;; This is handled by initialize! function now in zzinit.lisp. The
+;; below lines can be deleted.
+;;
+;;(read-hyphen-file *american-hyphen-trie*)
+;;(read-hyphen-file *french-hyphen-trie*)
 
 ;;(trace compile-hyphen-patterns)
 (setq *print-level* nil *print-length* nil)
