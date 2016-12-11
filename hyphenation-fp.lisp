@@ -14,8 +14,12 @@
 
 (defpackage :cl-typesetting-hyphen
   (:use common-lisp)
-  (:export
-   ))
+  (:nicknames "CL-TT-HYPH")
+  (:export "LANGUAGE-DEFINED-P"
+	   "DEFINE-LANGUAGE"
+	   "LANGUAGE-LOADED-P"
+	   "LOAD-LANGUAGE"
+	   "LANGUAGE-HYPHENATION"))
 
 (in-package :cl-typesetting-hyphen)
 
@@ -36,9 +40,15 @@
     (:american       . "ushyph")
     (:united-kingdom . "ukhyph")
     (:french         . "frhyph")
-    (:foo            . "foo")
-    )
-  )
+    (:foo            . "foo"))
+  "An alist of supported languages, with CARs being language names and
+  CDRs naming files expected to be found in
+  `cl-typesetting-hyphen::*hyphen-patterns-directory*'.")
+
+(defvar *language-trie-alist*
+  '()
+  "An alist of (LANGUAGE . HYPHEN-TRIE) pairs, used to store
+  hyphenation data for respective languages.")
 
 ;; An hyphenation object is able to return the list
 ;; of hyphenation points for any word according to
@@ -289,22 +299,45 @@
     ;; Lispworks x86 is not able to compile a lambda of arbitrary size
 #+nil
     (progn
-      (harlequin-common-lisp::toggle-source-debugging nil) 
+      (harlequin-common-lisp::toggle-source-debugging nil)
       (setf (symbol-function (fn-find-hyphen-points hyphen-trie))
 	    (compile nil patterns)))
     (setf (pattern-trie hyphen-trie) (hyphen-make-trie patterns 0))
-    (setf (exception-trie hyphen-trie) (hyphen-make-trie exceptions 0))
-    ))
+    (setf (exception-trie hyphen-trie) (hyphen-make-trie exceptions 0))))
 
-(defparameter *american-hyphen-trie* (make-instance 'hyphen-trie :language :american))
-(defparameter *french-hyphen-trie* (make-instance 'hyphen-trie :language :french))
+(defun language-defined-p (lang-sym)
+  (assoc lang-sym *language-hyphen-file-list*))
 
+(defun define-language (lang-sym hyphen-file)
+  (unless (language-defined-p lang-sym)
+    (push (cons lang-sym hyphen-file) *language-hyphen-file-list*)))
+
+(defun language-loaded-p (lang-sym)
+  (assoc lang-sym *language-trie-alist*))
+
+(defun load-language (lang-sym &optional force)
+  (cond ((not (language-defined-p lang-sym))
+	 (error "Unsupported language ~S" lang-sym))
+	((or (not (language-loaded-p lang-sym))
+	     force)
+	 (let ((trie (make-instance 'hyphen-trie :language lang-sym)))
+	   (push (cons lang-sym trie) *language-trie-alist*)
+	   (read-hyphen-file trie)
+	   trie))))
+
+(defun language-hyphenation (lang-sym)
+  (let ((lang-defined (language-loaded-p lang-sym)))
+    (if (not lang-defined)
+	(error "Language not loaded, please use (LOAD-LANGUAGE ~S)" lang-sym)
+	(cdr lang-defined))))
+
+;; XXX These are left for software that could refer directly to these
+;; variables but no more languages should be added this way.  Instead,
+;; please use DEFINE-LANGUAGE and LOAD-LANGUAGE:
 ;;
-;; This is handled by initialize! function now in zzinit.lisp. The
-;; below lines can be deleted.
+;; (define-language :polish "plhyph")
+;; (load-language :polish)
 ;;
-;;(read-hyphen-file *american-hyphen-trie*)
-;;(read-hyphen-file *french-hyphen-trie*)
-
-;;(trace compile-hyphen-patterns)
-(setq *print-level* nil *print-length* nil)
+;; Initialization performed in ZZINIT.LISP.
+(defparameter *american-hyphen-trie* nil)
+(defparameter *french-hyphen-trie* nil)
