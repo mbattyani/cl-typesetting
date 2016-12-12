@@ -24,16 +24,15 @@ value, and force initialization of American and French hyphenation tries."
 	  *font* *default-font*))
 
   (when hyphen-patterns-directory
-    (setq cl-typesetting-hyphen::*hyphen-patterns-directory* hyphen-patterns-directory))
+    (setq cl-tt-hyph::*hyphen-patterns-directory* hyphen-patterns-directory))
   (when (confirm-hyphen-patterns-directory)
-    (cl-typesetting-hyphen::read-hyphen-file cl-typesetting-hyphen::*american-hyphen-trie*)
-    (cl-typesetting-hyphen::read-hyphen-file cl-typesetting-hyphen::*french-hyphen-trie*)
-    cl-typesetting-hyphen::*hyphen-patterns-directory*))
-
+    (setf cl-tt-hyph::*american-hyphen-trie* (cl-tt-hyph:load-language :american))
+    (setf cl-tt-hyph::*french-hyphen-trie*   (cl-tt-hyph:load-language :french))
+    cl-tt-hyph::*hyphen-patterns-directory*))
 
 (defun confirm-hyphen-patterns-directory ()
   (or (#-clisp probe-file #+clisp ext:probe-directory
-	       cl-typesetting-hyphen::*hyphen-patterns-directory*)
+	       cl-tt-hyph::*hyphen-patterns-directory*)
       (warn "You have set the following non-existent hyphen-patterns directory:
 
 ~a
@@ -43,6 +42,7 @@ initialize the system with something like this:
 
   (typeset:initialize! :hyphen-patterns-directory \"/usr/share/hyphen-patterns/\")
 "
-	    cl-typesetting-hyphen::*hyphen-patterns-directory*)))
+	    cl-tt-hyph::*hyphen-patterns-directory*)))
 
-(initialize!)
+(eval-when (:load-toplevel)
+  (initialize!))
