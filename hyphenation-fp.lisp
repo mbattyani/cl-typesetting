@@ -14,12 +14,12 @@
 
 (defpackage :cl-typesetting-hyphen
   (:use common-lisp)
-  (:nicknames "CL-TT-HYPH")
-  (:export "LANGUAGE-DEFINED-P"
-	   "DEFINE-LANGUAGE"
-	   "LANGUAGE-LOADED-P"
-	   "LOAD-LANGUAGE"
-	   "LANGUAGE-HYPHENATION"))
+  (:nicknames :cl-tt-hyph)
+  (:export #:language-defined-p
+	   #:define-language
+	   #:language-loaded-p
+	   #:load-language
+	   #:language-hyphenation))
 
 (in-package :cl-typesetting-hyphen)
 
@@ -85,7 +85,7 @@
 	 (result (hyphen-trie-find-exception word-seq (exception-trie hyphen-trie))))
     (unless result
       (setq result (hyphen-trie-find `(#\. ,@word-seq #\.) (pattern-trie hyphen-trie))))
-    (mapcar #'first (remove-if 
+    (mapcar #'first (remove-if
                      #'(lambda (x)
                          (let ((idx (first x)))
                            (or (eq idx :end)
@@ -112,7 +112,7 @@
 	       (push (code-char (+ (* c1 16) c2))
 		     key))
 	     (incf position))
-	    ((digit-char-p c) (push (cons position (digit-char-p c)) value)) 
+	    ((digit-char-p c) (push (cons position (digit-char-p c)) value))
 	    (t (push c key) (incf position))))
     (append (reverse key) value)))
 
@@ -127,28 +127,28 @@
 	    (t (push c key) (incf position))))
     (append (reverse key) (or value (list (cons :end 1))))))
 
-;; Build a trie out of a sorted list 
+;; Build a trie out of a sorted list
 ;; of pairs (word, hyph-points)
 ;;
 (defun hyphen-make-trie (list-of-list depth)
   (when (first list-of-list)
-      (let (result 
+      (let (result
 	    subresult
 	    (prev_c (caar list-of-list)))
 	(loop for l = (pop list-of-list)
 	  while l
 	  do
-	  (cond 
+	  (cond
 	   ((eq (first l) prev_c) (push (rest l) subresult))
-	   (t 
+	   (t
 	    (cond ((characterp prev_c)
 		   (push `(,prev_c ,@(hyphen-make-trie subresult (+ depth 1))) result))
 		  (t
 		   (push `(:pattern ,prev_c ,@(first subresult)) result)))
-	    (setq prev_c (first l) 
+	    (setq prev_c (first l)
 		  subresult (list (rest l)))))
-	  finally 
-	  (progn 
+	  finally
+	  (progn
 	    (if (characterp prev_c)
 		(push `(,prev_c ,@(hyphen-make-trie subresult (+ depth 1))) result)
 	      (push `(:pattern ,prev_c ,@(first subresult)) result)))
@@ -161,7 +161,7 @@
 ;;
 (defun hyphen-trie-find-aux (word-seq trie)
   (when trie
-    (append 
+    (append
      (rest (assoc :pattern trie))
      (when word-seq
        (hyphen-trie-find-aux (rest word-seq) (cdr (assoc (first word-seq) trie)))))))
@@ -171,9 +171,9 @@
     (remove-if #'evenp
 	       (remove-duplicates
 		(sort
-		 (mapcon #'(lambda (x) 
+		 (mapcon #'(lambda (x)
 			     (incf pos)
-			     (mapcar #'(lambda (y) 
+			     (mapcar #'(lambda (y)
 					 (cons (+ (first y) pos) (rest y)))
 				     (hyphen-trie-find-aux x trie))) word-seq)
 		 #'(lambda (x y) (or (< (first x) (first y))
@@ -181,12 +181,12 @@
 		 )
 		:key #'first)
      :key #'rest)))
-    
+
 ;; Exceptions are a bit different
 ;; Either a word is an exception or not, but no patter to test
 ;;
 (defun hyphen-trie-find-exception-aux (word-seq trie)
-  (when trie 
+  (when trie
     (if word-seq
 	(hyphen-trie-find-exception-aux (rest word-seq) (cdr (assoc (first word-seq) trie)))
       (rest (assoc :pattern trie)))))
@@ -198,9 +198,9 @@
     #'(lambda (x y) (or (< (first x) (first y))
 			(and (= (first x) (first y))
 			     (< (rest x) (rest y)))))
-    )	
+    )
    :key #'first))
-    
+
 ;;; Annoying, but Lispworks is not able to compile the resulting lambda
 ;;; under x86 architectures. Moreover, it is not clear if it is the most
 ;;; efficient approach.
@@ -224,7 +224,7 @@
 	   (trie-contrib (remove-if #'(lambda (x) (eq (first x) :pattern)) patterns))
 	   (pattern-inst
 	    (mapcar
-	     #'(lambda (x) 
+	     #'(lambda (x)
 		 `(push
 		   (cons (+ ,(caadr x) pos) ,(cdadr x))
 		   result))
@@ -232,14 +232,14 @@
 	   (trie-inst
 	    (cond ((null trie-contrib) nil)
 		  ((null (rest trie-contrib))
-		   `(when (char= 
-			   (nth ,(- level 1) word-seq) 
+		   `(when (char=
+			   (nth ,(- level 1) word-seq)
 			   ,(first (first trie-contrib)))
 		     ,(hyphen-compile-patterns (rest (first trie-contrib)) (+ level 1) pos)))
 		  (t
-		   `(case  (nth ,(- level 1) word-seq) 
-		     ,@(mapcar #'(lambda (l) 
-				   (list (first l) 
+		   `(case  (nth ,(- level 1) word-seq)
+		     ,@(mapcar #'(lambda (l)
+				   (list (first l)
 					 (hyphen-compile-patterns (rest l) (+ level 1) pos))) trie-contrib)))))
 	   (inst (if (null pattern-inst)
 		     (if (null (rest trie-inst))
@@ -253,7 +253,7 @@
       (if (and (atom (first inst)) (fboundp (first inst)))
 	  inst
 	`(progn  ,@inst)))))
-	     
+
 
 (defun hyphen-cmp-char-lists (l1 l2)
   (let (result done)
@@ -267,7 +267,7 @@
 		(setq done t)
 	      ))
 	  finally (if done result nil))))
-	      
+
 (defmethod read-hyphen-file (hyphen-trie)
   (let ((filename (make-pathname :name (cdr (assoc (language hyphen-trie)
                                                    *language-hyphen-file-list*))
