@@ -25,5 +25,29 @@
    #:mark-ref-point #:find-ref-point #:find-ref-point-page-number #:find-ref-point-page-data
    #:add-contextual-action #:set-contextual-variable #:push-contextual-variable
    #:pop-contextual-variable #:get-contextual-variable
-   #:initialize!))
-
+   #:initialize!
+   #:*default-font*
+   #:*default-font-size*
+   #:*default-text-x-scale*
+   #:*default-color*
+   #:*default-background-color
+   #:*default-h-align*
+   #:*default-v-align*
+   #:*default-left-margin*
+   #:*default-right-margin*
+   #:*default-pre-decoration*
+   #:*default-post-decoration*
+   #:*default-leading-ratio*
+   #:*font*
+   #:*font-size*
+   #:*text-x-scale*
+   #:*color*
+   #:*background-color*
+   #:*h-align*
+   #:*v-align*
+   #:*left-margin*
+   #:*right-margin*
+   #:*pre-decoration*
+   #:*post-decoration*
+   #:*leading-ratio*
+   #:*leading*))

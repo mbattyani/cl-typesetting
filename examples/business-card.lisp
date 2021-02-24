@@ -1,4 +1,4 @@
-;;; cl-typesetting copyright 2003-2005 Marc Battyani see license.txt for the details
+;;; cl-typesetting copyright 2002-2021 Marc Battyani see license.txt for the details
 ;;; You can reach me at marc.battyani@fractalconcept.com or marc@battyani.net
 ;;; The homepage of cl-typesetting is here: http://www.fractalconcept.com/asp/html/cl-typesetting.html
 
