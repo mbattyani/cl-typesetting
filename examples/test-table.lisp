@@ -1,6 +1,6 @@
 (in-package :cl-user)
 
-(defun test-table (&optional (file (lw:current-pathname "test-table.pdf"))
+(defun test-table (&optional (file "test-table.pdf")
                    &aux content table (margins '(72 72 72 50)))
   (let* ((tt:*default-font* (pdf:get-font "Helvetica"))
          (tt:*default-font-size* 10)
