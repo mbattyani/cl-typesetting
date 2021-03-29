@@ -335,16 +335,9 @@
             (*leading-ratio* *default-leading-ratio*))
       (progn ,@body))))
 
-(defmacro compile-text ((&rest args) &body body)
-  `(with-text-content ((make-instance 'text-content ,@args) :dont-save-style t)
-    (add-box (copy-style (text-style *content*)))
-    ,@(mapcar 'insert-stuff body)
-    *content*))
-
-(defmacro with-text-compilation (&body body)
-  `(progn ,@(mapcar 'insert-stuff body)))
-
-(defmacro with-style ((&rest style) &body body)
+(defmacro with-style ((&rest style &key font-size font h-align v-align
+                         color background-color text-x-scale &allow-other-keys)
+                      &body body)
   (with-gensyms (new-style restore-style)
     `(let* ((,new-style (make-instance 'text-style ,@style))
 	    (,restore-style (make-restore-style ,new-style)))
@@ -353,6 +346,17 @@
       ,@(mapcar 'insert-stuff body)
       (add-box ,restore-style)
       (use-style ,restore-style))))
+
+(defmacro compile-text ((&rest args &key font-size font h-align v-align
+                           color background-color text-x-scale &allow-other-keys)
+                        &body body)
+  `(with-text-content ((make-instance 'text-content) :dont-save-style t)
+     (add-box (copy-style (text-style *content*)))
+     (with-style ,args ,@body)
+     *content*))
+
+(defmacro with-text-compilation (&body body)
+  `(progn ,@(mapcar 'insert-stuff body)))
 
 (defmacro set-style ((&rest style) &body body)
   (with-gensyms (new-style)
