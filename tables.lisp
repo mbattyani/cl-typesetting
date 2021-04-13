@@ -423,7 +423,9 @@
  		          ;; Next, draw table border if not suppressed
 			  (unless (or (zerop border) (null cell-border))
                             (pdf:set-line-width border)
-                            (pdf:set-gray-stroke 0)
+                            (if (border-color table)
+                                (pdf:set-color-stroke (border-color table))
+                                (pdf:set-gray-stroke 0))
                             (pdf:basic-rect (- half-border) half-border ;0 0
                                             (+ width full-size-offset)
                                             (- (+ height full-size-offset)))
